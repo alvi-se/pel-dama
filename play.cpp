@@ -1,4 +1,4 @@
-//#include "player.hpp"
+#include "player.hpp"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -13,7 +13,7 @@ using std::string;
 int main(int argc, char **argv){
 	
 	int player_nr = atoi(argv[1]);	
-	//Player p(player_nr);
+	Player p(player_nr);
 	
 	cout << "Playing as player " << player_nr << endl;
 	
