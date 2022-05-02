@@ -18,6 +18,40 @@ template<typename T>
 class Stack
 {
 public:
+    class iterator
+    {
+
+    public:
+        iterator(Cell<T>* cell)
+        {
+            current = cell;
+        }
+
+        iterator& operator++()
+        {
+            // ++i
+            current = current->next;
+            return *this;
+        }
+
+        iterator operator++(int) // int è dummy, per differenziarlo da ++i
+        {
+            // i++
+            iterator old(*this);
+            current = current->next;
+            return old;
+        }
+
+        T& operator*()
+        {
+            return current->data;
+        }
+
+    private:
+        using iterator_category = std::forward_iterator_tag;
+        Cell <T>* current;
+    };
+
     Stack()
     {
         head = nullptr;
@@ -342,5 +376,5 @@ bool Player::loses() const
 
 int Player::recurrence() const
 {
-    // TODO
+    
 }
