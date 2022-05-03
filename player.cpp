@@ -233,7 +233,7 @@ Player& Player::operator=(const Player& p)
 
 Player::piece Player::operator()(int r, int c, int history_offset) const
 {
-    // TODO
+    pimpl->history.at(history_offset).pieces[r][c];
 }
 
 void Player::load_board(const std::string& filename)
@@ -259,7 +259,9 @@ void Player::load_board(const std::string& filename)
             {
                 // Si può sapere se una cella è bianca se la somma tra gli indici
                 // di riga e colonna è dispari, analogamente pari per le celle nere
-                if ((i + j) % 2 != 0)
+                // Bisogna però dividere per due il numero della colonna, dato che le
+                // celle sono tutte spaziate
+                if ((i + j / 2) % 2 != 0)
                 {
                     if (s.at(j) != ' ')
                         throw player_exception { player_exception::invalid_board, "Occupied white cell" };
