@@ -3,6 +3,8 @@
 using std::string;
 using std::ifstream;
 using std::ofstream;
+using std::ostream;
+using std::istream;
 using std::endl;
 
 #pragma region DATA STRUCTURES
@@ -109,9 +111,9 @@ public:
         Cell<T>* pc = head;
         while (pos > 0)
         {
-            pc = pc->next;
             if (pc == nullptr)
                 throw player_exception { player_exception::index_out_of_bounds, "Out of stack bounds" };
+            pc = pc->next;
             --pos;
         }
         return pc->data;
@@ -124,9 +126,9 @@ public:
         Cell<T>* pc = head;
         while (pos > 0)
         {
-            pc = pc->next;
             if (pc == nullptr)
                 throw player_exception { player_exception::index_out_of_bounds, "Out of stack bounds" };
+            pc = pc->next;
             --pos;
         }
         return pc->data;
@@ -183,8 +185,131 @@ private:
 
 #pragma endregion
 
-struct Board
+char piece_to_char(Player::piece p)
 {
+    switch (p)
+    {
+        case Player::e : return ' ';
+        case Player::o : return 'o';
+        case Player::x : return 'x';
+        case Player::O : return 'O';
+        case Player::X : return 'X';
+        default:
+            throw player_exception { player_exception::invalid_board, "Invalid piece" };
+    }
+}
+
+Player::piece char_to_piece(char c)
+{
+    switch (c)
+    {
+        case ' ' : return Player::e;
+        case 'o' : return Player::o;
+        case 'x' : return Player::x;
+        case 'O' : return Player::O;
+        case 'X' : return Player::X;
+        default:
+            throw player_exception { player_exception::invalid_board, "Invalid piece"};
+    }
+}
+
+class Board
+{
+public:
+    /**
+     * @brief Istanzia una board iniziale 
+     */
+    Board()
+    {
+        for (size_t i = 0; i < 8; ++i)
+        {
+            for (size_t j = 0; j < 8; ++j)
+            {
+            // La cella è nera, si possono mettere le pedine
+                if ((i + j) % 2 == 0)
+                {
+                    // Zona bianchi
+                    if (i <= 2)
+                        pieces[i][j] = Player::o;
+                    // Zona neri
+                    else if (i >= 5)
+                        pieces[i][j] = Player::x;
+                    // Zona centrale
+                    else
+                        pieces[i][j] = Player::e;
+                }
+                // Cella bianca
+                else
+                    pieces[i][j] = Player::e;
+            }
+        }
+    }
+
+    /**
+     * @brief Istanzia la board leggendo la posizione delle celle
+     * dallo stream passato per parametro
+     * @param input Lo stream di input
+     */
+    Board(istream& input)
+    {
+        for (int i = 0; i < 8; ++i)
+        {
+            string s;
+            input >> s;
+            if (s.length() != 15)
+                throw player_exception { player_exception::invalid_board, "Board row size not equal to 15" };
+            for (int j = 0; j < s.length(); ++j)
+            {
+                // Le celle dispari sono tutti spazi
+                if (j % 2 != 0 && s.at(j) != ' ')
+                    throw player_exception { player_exception::invalid_board, "Expected space" };
+                // Le celle pari sono le caselle della scacchiera
+                else
+                {
+                    // Si può sapere se una cella è bianca se la somma tra gli indici
+                    // di riga e colonna è dispari, analogamente pari per le celle nere
+                    // Bisogna però dividere per due il numero della colonna, dato che le
+                    // celle sono tutte spaziate
+                    if ((i + j / 2) % 2 != 0)
+                    {
+                        if (s.at(j) != ' ')
+                            throw player_exception { player_exception::invalid_board, "Occupied white cell" };
+                    }
+                    else
+                    {
+                        pieces[i][j / 2] = char_to_piece(s.at(j));
+                    }
+                }
+            }
+        }
+    }
+
+    Player::piece& at(int i, int j)
+    {
+        if (
+            i < 0 || i >= 8 ||
+            j < 0 || j >= 8
+        )
+            throw player_exception { player_exception::index_out_of_bounds, "Invalid position" };
+        return pieces[i][j];
+    }
+
+    void print(ostream& output)
+    {
+        for (size_t i = 0; i < 8; ++i)
+        {
+            for (size_t j = 0; j < 8; ++j)
+            {
+                char c = piece_to_char(pieces[i][j]);
+                output << c;
+                if (j < 7)
+                    output << ' ';
+            }
+            if (i < 7)
+                output << endl;
+        }
+    }
+private:
     Player::piece pieces[8][8];
 };
 
@@ -233,7 +358,7 @@ Player& Player::operator=(const Player& p)
 
 Player::piece Player::operator()(int r, int c, int history_offset) const
 {
-    pimpl->history.at(history_offset).pieces[r][c];
+    pimpl->history.at(history_offset).at(r, c);
 }
 
 void Player::load_board(const std::string& filename)
@@ -242,55 +367,8 @@ void Player::load_board(const std::string& filename)
     if (!file.good())
         throw player_exception{ player_exception::missing_file, "Missing file: " + filename };
 
-    Board b;
-    for (int i = 0; i < 8; ++i)
-    {
-        string s;
-        std::getline(file, s);
-        if (s.length() != 15)
-            throw player_exception { player_exception::invalid_board, "Board row size not equal to 15" };
-        for (int j = 0; j < s.length(); ++j)
-        {
-            // Le celle dispari sono tutti spazi
-            if (j % 2 != 0 && s.at(j) != ' ')
-                throw player_exception { player_exception::invalid_board, "Expected space" };
-            // Le celle pari sono le caselle della scacchiera
-            else
-            {
-                // Si può sapere se una cella è bianca se la somma tra gli indici
-                // di riga e colonna è dispari, analogamente pari per le celle nere
-                // Bisogna però dividere per due il numero della colonna, dato che le
-                // celle sono tutte spaziate
-                if ((i + j / 2) % 2 != 0)
-                {
-                    if (s.at(j) != ' ')
-                        throw player_exception { player_exception::invalid_board, "Occupied white cell" };
-                }
-                switch(s.at(j))
-                {
-                    case ' ':
-                        b.pieces[i][j / 2] = Player::e;
-                        break;
-                    case 'x':
-                        b.pieces[i][j / 2] = Player::x;
-                        break;
-                    case 'X':
-                        b.pieces[i][j / 2] = Player::X;
-                        break;
-                    case 'o':
-                        b.pieces[i][j / 2] = Player::o;
-                        break;
-                    case 'O':
-                        b.pieces[i][j / 2] = Player::O;
-                        break;
-                    default:
-                        throw player_exception{ player_exception::invalid_board, "Piece not valid" };
-                }
-            }
-        }
-    }
+    Board b(file);
 
-    // FIXME non è detto che funzioni sempre a causa del getline, investigare
     if (!file.eof())
         throw player_exception{ player_exception::invalid_board, "New line at end of board " + filename };
 
@@ -303,40 +381,13 @@ void Player::store_board(const std::string& filename, int history_offset) const
 {
     ofstream file(filename);
     Board b = pimpl->history.at(history_offset);
-    // TODO committo, buonanotte.
+    
 }
 
 void Player::init_board(const std::string& filename) const
 {
     ofstream file(filename);
-    for (int i = 0; i < 8; ++i)
-    {
-        for (int j = 0; j < 8; ++j)
-        {
-            // La cella è nera, si possono mettere le pedine
-            if ((i + j) % 2 == 0)
-            {
-                // Zona bianchi
-                if (i <= 2)
-                    file << 'o';
-                // Zona neri
-                else if (i >= 5)
-                    file << 'x';
-                // Zona centrale
-                else
-                    file << ' ';
-            }
-            // Cella bianca
-            else
-                file << ' ';
-            
-            // Spazio tra le celle
-            if (j < 7)
-                file << ' ';
-        }
-        if (i < 7)
-            file << endl;
-    }
+    Board().print(file);
     file.close();
 }
 
