@@ -309,6 +309,21 @@ public:
                 output << endl;
         }
     }
+
+    bool operator==(const Board& b)
+    {
+        bool equal = true;
+        for (size_t i = 0; i < 8; ++i)
+        {
+            for (size_t j = 0; j < 8; ++j)
+            {
+                if (pieces[i][j] != b.pieces[i][j])
+                    equal = false;
+            }
+        }
+        return equal;
+    }
+    
 private:
     Player::piece pieces[8][8];
 };
@@ -400,6 +415,8 @@ void Player::move()
 
 bool Player::valid_move() const
 {
+    if (pimpl->history.at(0) == pimpl->history.at(1))
+        return false;
     // TODO
 }
 
@@ -431,5 +448,5 @@ bool Player::loses() const
 
 int Player::recurrence() const
 {
-    
+    // TODO
 }
