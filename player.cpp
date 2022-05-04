@@ -255,7 +255,7 @@ public:
         for (int i = 0; i < 8; ++i)
         {
             string s;
-            input >> s;
+            std::getline(input, s);
             if (s.length() != 15)
                 throw player_exception { player_exception::invalid_board, "Board row size not equal to 15" };
             for (int j = 0; j < s.length(); ++j)
@@ -380,7 +380,9 @@ void Player::load_board(const std::string& filename)
 void Player::store_board(const std::string& filename, int history_offset) const
 {
     ofstream file(filename);
-    Board b = pimpl->history.at(history_offset);
+    Board& b = pimpl->history.at(history_offset);
+    b.print(file);
+    file.close();
     
 }
 
