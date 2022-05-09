@@ -16,15 +16,17 @@ struct Cell
     Cell* next;
 };
 
+
 template<typename T>
 class Stack
 {
 public:
+    using Pcell = Cell<T>*;
     class iterator
     {
 
     public:
-        iterator(Cell<T>* cell)
+        iterator(Pcell cell)
         {
             current = cell;
         }
@@ -71,7 +73,7 @@ public:
 
     void push(T element)
     {
-        Cell<T>* c = new Cell<T>;
+        Pcell c = new Cell<T>;
         c->next = nullptr;
         if (head == nullptr)
         {
@@ -99,7 +101,7 @@ public:
     {
         if (head == nullptr)
             throw player_exception{ player_exception::index_out_of_bounds, "Tried to pop but stack is empty." };
-        Cell<T>* c = head;
+        Pcell c = head;
         head = head->next;
         delete c;
     }
@@ -108,7 +110,7 @@ public:
     {
         if (head == nullptr)
             throw player_exception { player_exception::index_out_of_bounds, "Out of stack bounds" };
-        Cell<T>* pc = head;
+        Pcell pc = head;
         while (pos > 0)
         {
             if (pc == nullptr)
@@ -121,9 +123,7 @@ public:
     
     T& at(int pos) const
     {
-        if (head == nullptr)
-            throw player_exception { player_exception::index_out_of_bounds, "Out of stack bounds" };
-        Cell<T>* pc = head;
+        Pcell pc = head;
         while (pos > 0)
         {
             if (pc == nullptr)
@@ -134,9 +134,23 @@ public:
         return pc->data;
     }
 
+    void remove(int pos)
+    {
+        if (pos == 0)
+        {
+            Pcell toremove = head;
+            head = toremove->next;
+            delete toremove;
+        }
+        else
+        {
+            remove_rec(pos, head);
+        }
+    }
+
     int size() const
     {
-        Cell<T>* pc = head;
+        Pcell pc = head;
         int size = 0;
         while (pc != nullptr)
         {
@@ -157,11 +171,12 @@ public:
     }
 
 private:
-    Cell<T>* head;
 
-    Cell<T>* copy(Cell<T>* pc)
+    Pcell head;
+
+    Pcell copy(Pcell pc)
     {
-        Cell<T>* newcell = nullptr;
+        Pcell newcell = nullptr;
         if (pc != nullptr)
         {
             newcell = new Cell<T>;
@@ -172,7 +187,23 @@ private:
         return newcell;
     }
 
-    void destroy(Cell<T>* pc)
+    void remove_rec(int pos, Pcell pc)
+    {
+        if (pc == nullptr || pc->next == nullptr)
+            throw player_exception { player_exception::index_out_of_bounds, "Out of stack bounds" };
+        if (pos > 1)
+        {
+            remove_rec(--pos, pc->next);
+        }
+        else
+        {
+            Pcell toremove = pc->next;
+            pc->next = toremove->next;
+            delete toremove;
+        }
+    }
+
+    void destroy(Pcell pc)
     {
         if (pc != nullptr)
         {
@@ -184,6 +215,8 @@ private:
 };
 
 #pragma endregion
+
+#pragma region GAME ELEMENTS AND FUNCTIONS
 
 char piece_to_char(Player::piece p)
 {
@@ -328,6 +361,7 @@ private:
     Player::piece pieces[8][8];
 };
 
+#pragma endregion
 
 struct Player::Impl
 {
@@ -448,5 +482,5 @@ bool Player::loses() const
 
 int Player::recurrence() const
 {
-    // TODO
+    
 }
