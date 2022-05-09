@@ -74,26 +74,22 @@ public:
     void push(T element)
     {
         Pcell c = new Cell<T>;
-        c->next = nullptr;
-        if (head == nullptr)
-        {
-            c->next = nullptr;
-            head = c;
-        }
-        else
-        {
-            c->next = head;
-            head = c;
-        }
+        c->next = head;
+        head = c;
+        c->data = element;
     }
 
     T& top()
     {
+        if (head == nullptr)
+            throw new player_exception { player_exception::index_out_of_bounds, "No elements in stack" };
         return head->data;
     }
 
     T& top() const
     {
+        if (head == nullptr)
+            throw new player_exception { player_exception::index_out_of_bounds, "No elements in stack" };
         return head->data;
     }
 
@@ -108,8 +104,6 @@ public:
 
     T& at(int pos)
     {
-        if (head == nullptr)
-            throw player_exception { player_exception::index_out_of_bounds, "Out of stack bounds" };
         Pcell pc = head;
         while (pos > 0)
         {
@@ -118,6 +112,8 @@ public:
             pc = pc->next;
             --pos;
         }
+        if (pc == nullptr)
+            throw player_exception { player_exception::index_out_of_bounds, "Out of stack bounds" };
         return pc->data;
     }
     
@@ -131,6 +127,8 @@ public:
             pc = pc->next;
             --pos;
         }
+        if (pc == nullptr)
+            throw player_exception { player_exception::index_out_of_bounds, "Out of stack bounds" };
         return pc->data;
     }
 
@@ -138,6 +136,8 @@ public:
     {
         if (pos == 0)
         {
+            if (head == nullptr)
+                throw player_exception { player_exception::index_out_of_bounds, "Out of stack bounds" };
             Pcell toremove = head;
             head = toremove->next;
             delete toremove;
@@ -150,14 +150,7 @@ public:
 
     int size() const
     {
-        Pcell pc = head;
-        int size = 0;
-        while (pc != nullptr)
-        {
-            pc = pc->next;
-            ++size;
-        }
-        return size;
+        return size_rec(head);
     }
 
     Stack& operator=(const Stack& s)
@@ -201,6 +194,14 @@ private:
             pc->next = toremove->next;
             delete toremove;
         }
+    }
+
+    int size_rec(Pcell pc) const
+    {
+        if (pc == nullptr)
+            return 0;
+        else
+            return 1 + size_rec(pc->next);
     }
 
     void destroy(Pcell pc)
@@ -291,7 +292,7 @@ public:
             std::getline(input, s);
             if (s.length() != 15)
                 throw player_exception { player_exception::invalid_board, "Board row size not equal to 15" };
-            for (int j = 0; j < s.length(); ++j)
+            for (size_t j = 0; j < s.length(); ++j)
             {
                 // Le celle dispari sono tutti spazi
                 if (j % 2 != 0 && s.at(j) != ' ')
