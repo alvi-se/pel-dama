@@ -163,7 +163,7 @@ public:
         }
     }
 
-    int size() const
+    size_t size() const
     {
         return size_rec(head);
     }
@@ -221,7 +221,7 @@ private:
         }
     }
 
-    int size_rec(Pcell pc) const
+    size_t size_rec(Pcell pc) const
     {
         if (pc == nullptr)
             return 0;
@@ -369,7 +369,7 @@ public:
         }
     }
 
-    bool operator==(const Board& b)
+    bool operator==(const Board& b) const
     {
         bool equal = true;
         for (size_t i = 0; i < 8; ++i)
@@ -385,6 +385,26 @@ public:
     
 private:
     Player::piece pieces[8][8];
+};
+
+struct Move
+{
+    Player::piece p;
+    int from[2];
+    int to[2];
+    int eats[2];
+
+    bool valid() const
+    {
+        switch (p)
+        {
+            case Player::piece::e : return false;
+            case Player::piece::x :
+                // TODO
+
+                break;
+        }
+    }
 };
 
 #pragma endregion
@@ -508,5 +528,12 @@ bool Player::loses() const
 
 int Player::recurrence() const
 {
-    
+    Board top = pimpl->history.top();
+    int count = 0;
+    for (const Board b : pimpl->history)
+    {
+        if (b == top)
+            ++count;
+    }
+    return count;
 }

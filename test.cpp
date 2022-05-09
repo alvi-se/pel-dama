@@ -1,11 +1,11 @@
 #include <iostream>
-#include "stack.hpp"
-#include <stack>
+#include "player.cpp"
 
 using std::cout;
 using std::endl;
 
 int main()
 {
-    Stack<int> s;
+    Player p;
+    p.init_board("board.txt");
 }
