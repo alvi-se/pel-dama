@@ -24,11 +24,17 @@ public:
     using Pcell = Cell<T>*;
     class iterator
     {
-
     public:
+        using iterator_category = std::forward_iterator_tag;
+
         iterator(Pcell cell)
         {
             current = cell;
+        }
+
+        iterator(const iterator& it)
+        {
+            current = it.current;
         }
 
         iterator& operator++()
@@ -51,9 +57,18 @@ public:
             return current->data;
         }
 
+        bool operator==(const iterator& it) const
+        {
+            return current == it.current;
+        }
+
+        bool operator!=(const iterator& it) const
+        {
+            return current != it.current;
+        }
+
     private:
-        using iterator_category = std::forward_iterator_tag;
-        Cell <T>* current;
+        Pcell current;
     };
 
     Stack()
@@ -161,6 +176,16 @@ public:
             head = copy(s.head);
         }
         return *this;
+    }
+
+    iterator begin()
+    {
+        return iterator(head);
+    }
+
+    iterator end()
+    {
+        return iterator(nullptr);
     }
 
 private:
