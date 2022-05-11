@@ -1,23 +1,22 @@
 #include "player.hpp"
 
-using std::string;
+using std::endl;
 using std::ifstream;
+using std::istream;
 using std::ofstream;
 using std::ostream;
-using std::istream;
-using std::endl;
+using std::string;
 
 #pragma region DATA STRUCTURES
 
-template<typename T>
+template <typename T>
 struct Cell
 {
     T data;
     Cell* next;
 };
 
-
-template<typename T>
+template <typename T>
 class Stack
 {
 public:
@@ -97,14 +96,14 @@ public:
     T& top()
     {
         if (head == nullptr)
-            throw new player_exception { player_exception::index_out_of_bounds, "No elements in stack" };
+            throw new player_exception{ player_exception::index_out_of_bounds, "No elements in stack" };
         return head->data;
     }
 
     T& top() const
     {
         if (head == nullptr)
-            throw new player_exception { player_exception::index_out_of_bounds, "No elements in stack" };
+            throw new player_exception{ player_exception::index_out_of_bounds, "No elements in stack" };
         return head->data;
     }
 
@@ -123,12 +122,12 @@ public:
         while (pos > 0)
         {
             if (pc == nullptr)
-                throw player_exception { player_exception::index_out_of_bounds, "Out of stack bounds" };
+                throw player_exception{ player_exception::index_out_of_bounds, "Out of stack bounds" };
             pc = pc->next;
             --pos;
         }
         if (pc == nullptr)
-            throw player_exception { player_exception::index_out_of_bounds, "Out of stack bounds" };
+            throw player_exception{ player_exception::index_out_of_bounds, "Out of stack bounds" };
         return pc->data;
     }
     
@@ -138,12 +137,12 @@ public:
         while (pos > 0)
         {
             if (pc == nullptr)
-                throw player_exception { player_exception::index_out_of_bounds, "Out of stack bounds" };
+                throw player_exception{ player_exception::index_out_of_bounds, "Out of stack bounds" };
             pc = pc->next;
             --pos;
         }
         if (pc == nullptr)
-            throw player_exception { player_exception::index_out_of_bounds, "Out of stack bounds" };
+            throw player_exception{ player_exception::index_out_of_bounds, "Out of stack bounds" };
         return pc->data;
     }
 
@@ -152,7 +151,7 @@ public:
         if (pos == 0)
         {
             if (head == nullptr)
-                throw player_exception { player_exception::index_out_of_bounds, "Out of stack bounds" };
+                throw player_exception{ player_exception::index_out_of_bounds, "Out of stack bounds" };
             Pcell toremove = head;
             head = toremove->next;
             delete toremove;
@@ -189,7 +188,6 @@ public:
     }
 
 private:
-
     Pcell head;
 
     Pcell copy(Pcell pc)
@@ -208,7 +206,7 @@ private:
     void remove_rec(int pos, Pcell pc)
     {
         if (pc == nullptr || pc->next == nullptr)
-            throw player_exception { player_exception::index_out_of_bounds, "Out of stack bounds" };
+            throw player_exception{ player_exception::index_out_of_bounds, "Out of stack bounds" };
         if (pos > 1)
         {
             remove_rec(--pos, pc->next);
@@ -240,6 +238,50 @@ private:
     }
 };
 
+template <typename T>
+class Vector
+{
+public:
+    Vector(size_t size)
+    {
+        data = new T[size];
+        _size = size;
+    }
+
+    Vector(const Vector& v)
+    {
+        data = new T[v._size];
+        _size = v._size;
+        for (size_t i = 0; i < _size; ++i)
+        {
+            data[i] = v.data[i];
+        }
+    }
+
+    T& at(size_t index)
+    {
+        if (index >= _size)
+            throw player_exception{ player_exception::index_out_of_bounds, "Out of vector bounds" };
+        return data[index];
+    }
+
+    size_t size() const
+    {
+        return _size;
+    }
+
+    ~Vector()
+    {
+        delete[] data;
+    }
+
+private:
+    T* data;
+    size_t _size;
+
+    Vector();
+};
+
 #pragma endregion
 
 #pragma region GAME ELEMENTS AND FUNCTIONS
@@ -254,7 +296,7 @@ char piece_to_char(Player::piece p)
         case Player::O : return 'O';
         case Player::X : return 'X';
         default:
-            throw player_exception { player_exception::invalid_board, "Invalid piece" };
+        throw player_exception{ player_exception::invalid_board, "Invalid piece" };
     }
 }
 
@@ -268,7 +310,7 @@ Player::piece char_to_piece(char c)
         case 'O' : return Player::O;
         case 'X' : return Player::X;
         default:
-            throw player_exception { player_exception::invalid_board, "Invalid piece"};
+        throw player_exception{ player_exception::invalid_board, "Invalid piece" };
     }
 }
 
@@ -316,12 +358,12 @@ public:
             string s;
             std::getline(input, s);
             if (s.length() != 15)
-                throw player_exception { player_exception::invalid_board, "Board row size not equal to 15" };
+                throw player_exception{ player_exception::invalid_board, "Board row size not equal to 15" };
             for (size_t j = 0; j < s.length(); ++j)
             {
                 // Le celle dispari sono tutti spazi
                 if (j % 2 != 0 && s.at(j) != ' ')
-                    throw player_exception { player_exception::invalid_board, "Expected space" };
+                    throw player_exception{ player_exception::invalid_board, "Expected space" };
                 // Le celle pari sono le caselle della scacchiera
                 else
                 {
@@ -332,7 +374,7 @@ public:
                     if ((i + j / 2) % 2 != 0)
                     {
                         if (s.at(j) != ' ')
-                            throw player_exception { player_exception::invalid_board, "Occupied white cell" };
+                            throw player_exception{ player_exception::invalid_board, "Occupied white cell" };
                     }
                     else
                     {
@@ -347,9 +389,8 @@ public:
     {
         if (
             i < 0 || i >= 8 ||
-            j < 0 || j >= 8
-        )
-            throw player_exception { player_exception::index_out_of_bounds, "Invalid position" };
+            j < 0 || j >= 8)
+            throw player_exception{ player_exception::index_out_of_bounds, "Invalid position" };
         return pieces[i][j];
     }
 
@@ -393,18 +434,17 @@ struct Move
     int from[2];
     int to[2];
     int eats[2];
+};
 
-    bool valid() const
+struct Change
     {
-        switch (p)
+    enum ChangeType
         {
-            case Player::piece::e : return false;
-            case Player::piece::x :
-                // TODO
-
-                break;
-        }
-    }
+        E_TO_P,
+        P_TO_E,
+        P_TO_P
+    };
+    ChangeType type;
 };
 
 #pragma endregion
@@ -418,16 +458,14 @@ struct Player::Impl
 Player::Player(int player_nr)
 {
     if (player_nr < 1 || player_nr > 2)
-        throw player_exception
-        {
+        throw player_exception{
             player_exception::index_out_of_bounds,
-            "Player number not valid. Must be 1 or 2"
-        };
+            "Player number not valid. Must be 1 or 2" };
     pimpl = new Impl;
     pimpl->player_nr = player_nr;
 }
 
-Player::Player(const Player &p)
+Player::Player(const Player& p)
 {
     // TODO ad ogni modifica del pimpl va sistemato il copy constructor
     pimpl = new Impl;
@@ -478,7 +516,6 @@ void Player::store_board(const std::string& filename, int history_offset) const
     Board& b = pimpl->history.at(history_offset);
     b.print(file);
     file.close();
-    
 }
 
 void Player::init_board(const std::string& filename) const
@@ -499,7 +536,6 @@ bool Player::valid_move() const
         return false;
     // TODO
 }
-
 
 void Player::pop()
 {
