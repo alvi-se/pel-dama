@@ -17,7 +17,7 @@ struct Cell
 };
 
 template <typename T>
-class Stack
+class List
 {
 public:
     using Pcell = Cell<T>*;
@@ -70,22 +70,28 @@ public:
         Pcell current;
     };
 
-    Stack()
+    List()
     {
         head = nullptr;
     }
 
-    Stack(const Stack<T>& s)
+    List(const List<T>& l)
     {
         head = copy(s->head);
     }
 
-    ~Stack()
+    List(List<T>&& l)
+    {
+        head = l->head;
+        l->head = nullptr;
+    }
+
+    ~List()
     {
         destroy(head);
     }
 
-    void push(T element)
+    void push_front(T element)
     {
         Pcell c = new Cell<T>;
         c->next = head;
@@ -93,21 +99,53 @@ public:
         c->data = element;
     }
 
-    T& top()
+    void push_back(T element)
+    {
+        Pcell c = new Cell<T>;
+        c->data = element;
+        c->next = nullptr;
+        if (head == nullptr)
+        {
+            head = c;
+        }
+        else
+        {
+            Pcell pc = head;
+            while (pc->next != nullptr)
+                pc = pc->next;
+            pc->next = c;
+        }
+    }
+
+    T& front()
     {
         if (head == nullptr)
             throw new player_exception{ player_exception::index_out_of_bounds, "No elements in stack" };
         return head->data;
     }
 
-    T& top() const
+    T& front() const
     {
         if (head == nullptr)
             throw new player_exception{ player_exception::index_out_of_bounds, "No elements in stack" };
         return head->data;
     }
 
-    void pop()
+    T& back()
+    {
+        if (head == nullptr)
+            throw new player_exception{ player_exception::index_out_of_bounds, "No elements in stack" };
+        return lastCell()->data;
+    }
+
+    T& back() const
+    {
+        if (head == nullptr)
+            throw new player_exception{ player_exception::index_out_of_bounds, "No elements in stack" };
+        return lastCell()->data;
+    }
+
+    void pop_front()
     {
         if (head == nullptr)
             throw player_exception{ player_exception::index_out_of_bounds, "Tried to pop but stack is empty." };
@@ -167,12 +205,22 @@ public:
         return size_rec(head);
     }
 
-    Stack& operator=(const Stack& s)
+    List& operator=(const List& l)
     {
         if (this != &s)
         {
             destroy(head);
             head = copy(s.head);
+        }
+        return *this;
+    }
+
+    List& operator=(List&& l)
+    {
+        if (this != &l)
+        {
+            head = l.head;
+            l.head = nullptr;
         }
         return *this;
     }
@@ -189,6 +237,14 @@ public:
 
 private:
     Pcell head;
+
+    Pcell& lastCell()
+    {
+        Pcell pc = head;
+        while (pc != nullptr && pc->next != nullptr)
+            pc = pc->next;
+        return pc;
+    }
 
     Pcell copy(Pcell pc)
     {
@@ -314,6 +370,31 @@ Player::piece char_to_piece(char c)
     }
 }
 
+struct Change
+    {
+    enum ChangeType
+        {
+        E_TO_P,
+        P_TO_E,
+        P_TO_P
+    };
+    ChangeType type;
+    int pos[2];
+};
+
+struct Move
+{
+    Player::piece p;
+    int from[2];
+    int to[2];
+    int eats[2];
+
+    Move(const List<Change>& changes)
+    {
+        // TODO
+    }
+};
+
 class Board
 {
 public:
@@ -410,6 +491,34 @@ public:
         }
     }
 
+    List<Change> getChanges(const Board& b)
+    {
+        List<Change> changes;
+        for (size_t i = 0; i < 8; ++i)
+        {
+            for (size_t j = 0; j < 8; ++j)
+            {
+                if (pieces[i][j] != b.pieces[i][j])
+                {
+                    Change c;
+                    c.pos[0] = i;
+                    c.pos[1] = j;
+                    // La cella di partenza è vuota
+                    if (b.pieces[i][j] == Player::e)
+                        c.type = c.E_TO_P;
+                    // La cella di arrivo è vuota
+                    else if (pieces[i][j] == Player::e)
+                        c.type = c.P_TO_E;
+                    // Il pezzo viene cambiato
+                    else
+                        c.type = c.P_TO_P;
+                    changes.push_back(c);
+                }
+            }
+        }
+        return changes;
+    }
+
     bool operator==(const Board& b) const
     {
         bool equal = true;
@@ -428,31 +537,12 @@ private:
     Player::piece pieces[8][8];
 };
 
-struct Move
-{
-    Player::piece p;
-    int from[2];
-    int to[2];
-    int eats[2];
-};
-
-struct Change
-    {
-    enum ChangeType
-        {
-        E_TO_P,
-        P_TO_E,
-        P_TO_P
-    };
-    ChangeType type;
-};
-
 #pragma endregion
 
 struct Player::Impl
 {
     int player_nr;
-    Stack<Board> history;
+    List<Board> history;
 };
 
 Player::Player(int player_nr)
@@ -507,7 +597,7 @@ void Player::load_board(const std::string& filename)
 
     file.close();
 
-    pimpl->history.push(b);
+    pimpl->history.push_front(b);
 }
 
 void Player::store_board(const std::string& filename, int history_offset) const
@@ -539,7 +629,7 @@ bool Player::valid_move() const
 
 void Player::pop()
 {
-    pimpl->history.pop();
+    pimpl->history.pop_front();
 }
 
 bool Player::wins(int player_nr) const
@@ -564,7 +654,7 @@ bool Player::loses() const
 
 int Player::recurrence() const
 {
-    Board top = pimpl->history.top();
+    Board top = pimpl->history.front();
     int count = 0;
     for (const Board b : pimpl->history)
     {
