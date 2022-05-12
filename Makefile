@@ -5,7 +5,7 @@ build/verify: build/verify.o build/player.o
 	g++ build/verify.o build/player.o -o build/verify
 
 build/test: test.cpp player.cpp
-	g++ test.cpp -o build/test
+	g++ -g test.cpp -o build/test
 
 build/play.o: play.cpp
 	g++ -g -c play.cpp -o build/play.o

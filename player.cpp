@@ -1,3 +1,10 @@
+/**
+ * @file player.cpp
+ * @author Alvise Favero (888851@stud.unive.it)
+ * @date 14/06/2022
+ * @version 1
+ */
+
 #include "player.hpp"
 
 using std::endl;
@@ -77,7 +84,7 @@ public:
 
     List(const List<T>& l)
     {
-        head = copy(s->head);
+        head = copy(l->head);
     }
 
     List(List<T>&& l)
@@ -207,10 +214,10 @@ public:
 
     List& operator=(const List& l)
     {
-        if (this != &s)
+        if (this != &l)
         {
             destroy(head);
-            head = copy(s.head);
+            head = copy(l.head);
         }
         return *this;
     }
@@ -370,31 +377,26 @@ Player::piece char_to_piece(char c)
     }
 }
 
-struct Change
-    {
-    enum ChangeType
-        {
-        E_TO_P,
-        P_TO_E,
-        P_TO_P
-    };
-    ChangeType type;
-    int pos[2];
-};
-
+/**
+ * @brief Contiene i dati della mossa di un pezzo.
+ * Se 
+ */
 struct Move
 {
     Player::piece p;
     int from[2];
     int to[2];
     int eats[2];
-
-    Move(const List<Change>& changes)
-    {
-        // TODO
-    }
 };
 
+/**
+ * @brief Rappresenta una scacchiera.
+ * È formata da una matrice 8 x 8 di player::piece.
+ * Per comodità, la matrice viene salvata in ordine
+ * dal basso verso l'alto, da sinistra a destra.
+ * Quindi l'angolo in basso a sinistra della scacchiera
+ * sarà posizione (0, 0), quello in alto a destra sarà (7, 7)
+ */
 class Board
 {
 public:
@@ -407,15 +409,15 @@ public:
         {
             for (size_t j = 0; j < 8; ++j)
             {
-            // La cella è nera, si possono mettere le pedine
-                if ((i + j) % 2 == 0)
+                // La cella è nera, si possono mettere le pedine
+                if ((i + j) % 2 != 0)
                 {
-                    // Zona bianchi
-                    if (i <= 2)
-                        pieces[i][j] = Player::o;
                     // Zona neri
-                    else if (i >= 5)
+                    if (i <= 2)
                         pieces[i][j] = Player::x;
+                    // Zona bianchi
+                    else if (i >= 5)
+                        pieces[i][j] = Player::o;
                     // Zona centrale
                     else
                         pieces[i][j] = Player::e;
@@ -475,48 +477,34 @@ public:
         return pieces[i][j];
     }
 
+    const Player::piece& at(int i, int j) const
+    {
+        if (
+            i < 0 || i >= 8 ||
+            j < 0 || j >= 8)
+            throw player_exception{ player_exception::index_out_of_bounds, "Invalid position" };
+        return pieces[i][j];
+    }
+
     void print(ostream& output)
     {
-        for (size_t i = 0; i < 8; ++i)
+        for (int i = 7; i >= 0; --i)
         {
-            for (size_t j = 0; j < 8; ++j)
+            for (int j = 0; j < 8; ++j)
             {
                 char c = piece_to_char(pieces[i][j]);
                 output << c;
                 if (j < 7)
                     output << ' ';
             }
-            if (i < 7)
+            if (i > 0)
                 output << endl;
         }
     }
 
-    List<Change> getChanges(const Board& b)
+    Move getMove(const Board& b)
     {
-        List<Change> changes;
-        for (size_t i = 0; i < 8; ++i)
-        {
-            for (size_t j = 0; j < 8; ++j)
-            {
-                if (pieces[i][j] != b.pieces[i][j])
-                {
-                    Change c;
-                    c.pos[0] = i;
-                    c.pos[1] = j;
-                    // La cella di partenza è vuota
-                    if (b.pieces[i][j] == Player::e)
-                        c.type = c.E_TO_P;
-                    // La cella di arrivo è vuota
-                    else if (pieces[i][j] == Player::e)
-                        c.type = c.P_TO_E;
-                    // Il pezzo viene cambiato
-                    else
-                        c.type = c.P_TO_P;
-                    changes.push_back(c);
-                }
-            }
-        }
-        return changes;
+        // TODO
     }
 
     bool operator==(const Board& b) const
@@ -543,6 +531,25 @@ struct Player::Impl
 {
     int player_nr;
     List<Board> history;
+
+    bool canMove(const Board& b, int row, int col)
+    {
+        piece p = b.at(row, col);
+        switch (p)
+        {
+        case x:
+            break;
+        case o:
+            break;
+        case X:
+            break;
+        case O:
+            break;
+
+        default:
+            break;
+        }
+    }
 };
 
 Player::Player(int player_nr)
@@ -617,14 +624,21 @@ void Player::init_board(const std::string& filename) const
 
 void Player::move()
 {
-    // TODO
+    
 }
 
 bool Player::valid_move() const
 {
-    if (pimpl->history.at(0) == pimpl->history.at(1))
+    try
+    {
+        Move m = pimpl->history.at(0).getMove(pimpl->history.at(1));
+    }
+    catch (const player_exception e)
+    {
         return false;
-    // TODO
+    }
+    return true;
+    
 }
 
 void Player::pop()
