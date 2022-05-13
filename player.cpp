@@ -175,7 +175,7 @@ public:
             throw player_exception{ player_exception::index_out_of_bounds, "Out of stack bounds" };
         return pc->data;
     }
-    
+
     T& at(int pos) const
     {
         Pcell pc = head;
@@ -353,12 +353,12 @@ char piece_to_char(Player::piece p)
 {
     switch (p)
     {
-        case Player::e : return ' ';
-        case Player::o : return 'o';
-        case Player::x : return 'x';
-        case Player::O : return 'O';
-        case Player::X : return 'X';
-        default:
+    case Player::e: return ' ';
+    case Player::o: return 'o';
+    case Player::x: return 'x';
+    case Player::O: return 'O';
+    case Player::X: return 'X';
+    default:
         throw player_exception{ player_exception::invalid_board, "Invalid piece" };
     }
 }
@@ -367,19 +367,19 @@ Player::piece char_to_piece(char c)
 {
     switch (c)
     {
-        case ' ' : return Player::e;
-        case 'o' : return Player::o;
-        case 'x' : return Player::x;
-        case 'O' : return Player::O;
-        case 'X' : return Player::X;
-        default:
+    case ' ': return Player::e;
+    case 'o': return Player::o;
+    case 'x': return Player::x;
+    case 'O': return Player::O;
+    case 'X': return Player::X;
+    default:
         throw player_exception{ player_exception::invalid_board, "Invalid piece" };
     }
 }
 
 /**
  * @brief Contiene i dati della mossa di un pezzo.
- * Se 
+ * Se
  */
 struct Move
 {
@@ -401,7 +401,7 @@ class Board
 {
 public:
     /**
-     * @brief Istanzia una board iniziale 
+     * @brief Istanzia una board iniziale
      */
     Board()
     {
@@ -501,6 +501,162 @@ public:
                 output << endl;
         }
     }
+    /**
+     * @brief Controlla se una pedina si può muovere nella board attuale.
+     * La possibilità di mangiare una pedina avversaria viene inclusa.
+     *
+     * @param row La riga della pedina.
+     * @param col La colonna della pedina.
+     * @return True se la pedina si può muovere, false altrimenti.
+     */
+    bool canMove(int row, int col) const
+    {
+        if (
+            row < 0 || row > 7 ||
+            col < 0 || col > 7)
+            throw player_exception{ player_exception::index_out_of_bounds, "Out of board bounds" };
+
+        switch (at(row, col))
+        {
+        case Player::piece::x:
+            // Verso l'alto
+            if (row < 7)
+            {
+                // Lato sinistro
+                if (col > 0 && at(row + 1, col - 1) == Player::piece::e)
+                    return true;
+                // Lato destro
+                if (col < 7 && at(row + 1, col + 1) == Player::piece::e)
+                    return true;
+            }
+            break;
+        case Player::piece::o:
+            // Verso il basso
+            if (row > 0)
+            {
+                // Lato sinistro
+                if (col > 0 && at(row - 1, col - 1) == Player::piece::e)
+                    return true;
+                // Lato destro
+                if (col < 7 && at(row - 1, col + 1) == Player::piece::e)
+                    return true;
+            }
+            break;
+        case Player::piece::X:
+        case Player::piece::O:
+            // Verso l'alto
+            if (row < 7)
+            {
+                // Lato sinistro
+                if (col > 0 && at(row + 1, col - 1) == Player::piece::e)
+                    return true;
+                // Lato destro
+                if (col < 7 && at(row + 1, col + 1) == Player::piece::e)
+                    return true;
+            }
+            // Verso il basso
+            if (row > 0)
+            {
+                // Lato sinistro
+                if (col > 0 && at(row - 1, col - 1) == Player::piece::e)
+                    return true;
+                // Lato destro
+                if (col < 7 && at(row - 1, col + 1) == Player::piece::e)
+                    return true;
+            }
+            break;
+        }
+        return canEat(row, col);
+    }
+
+    /**
+     * @brief Controlla se la pedina ha la possibilità di mangiare pedine avversarie.
+     *
+     * @param row La riga della pedina.
+     * @param col La colonna della pedina.
+     * @return True se può mangiare almeno una pedina, false altrimen 
+     */
+    bool canEat(int row, int col) const
+    {
+        if (
+            row < 0 || row > 7 ||
+            col < 0 || col > 7)
+            throw player_exception{ player_exception::index_out_of_bounds, "Out of board bounds" };
+
+        // TODO finire
+        switch (at(row, col))
+        {
+        case Player::piece::x:
+            if (row < 6)
+            {
+                // Lato sinistro
+                if (
+                    col > 1 &&
+                    at(row + 1, col - 1) == Player::piece::o &&
+                    at(row + 2, col - 2) == Player::piece::e
+                    )
+                    return true;
+                // Lato destro
+                if (
+                    col > 1 &&
+                    at(row + 1, col + 1) == Player::piece::o &&
+                    at(row + 2, col + 2) == Player::piece::e
+                    )
+                    return true;
+            }
+            break;
+        case Player::piece::o:
+            break;
+        case Player::piece::X:
+            break;
+        case Player::piece::O:
+            break;
+        }
+        return false;
+    }
+
+    bool promotion(int row, int col) const
+    {
+        switch (at(row, col))
+        {
+            // Una dama non può essere promossa!
+        case Player::piece::X: return false;
+        case Player::piece::O: return false;
+        case Player::piece::x:
+            if (row != 6)
+                return false;
+            // Lato sinistro
+            else if (
+                col > 0 &&
+                at(7, col - 1) == Player::piece::e
+                )
+                return true;
+            // Lato destro
+            else if (
+                col < 7 &&
+                at(7, col + 1) == Player::piece::e
+                )
+                return true;
+            break;
+        case Player::piece::o:
+            if (row != 1)
+                return false;
+            // Lato sinistro
+            else if (
+                col > 0 &&
+                at(0, col - 1) == Player::piece::e
+                )
+                return true;
+            // Lato destro
+            else if (
+                col < 7 &&
+                at(0, col + 1) == Player::piece::e
+                )
+                return true;
+            break;
+        }
+        return false;
+    }
 
     Move getMove(const Board& b)
     {
@@ -520,7 +676,7 @@ public:
         }
         return equal;
     }
-    
+
 private:
     Player::piece pieces[8][8];
 };
@@ -534,21 +690,7 @@ struct Player::Impl
 
     bool canMove(const Board& b, int row, int col)
     {
-        piece p = b.at(row, col);
-        switch (p)
-        {
-        case x:
-            break;
-        case o:
-            break;
-        case X:
-            break;
-        case O:
-            break;
 
-        default:
-            break;
-        }
     }
 };
 
@@ -624,7 +766,7 @@ void Player::init_board(const std::string& filename) const
 
 void Player::move()
 {
-    
+
 }
 
 bool Player::valid_move() const
@@ -638,7 +780,7 @@ bool Player::valid_move() const
         return false;
     }
     return true;
-    
+
 }
 
 void Player::pop()
