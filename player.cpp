@@ -436,7 +436,7 @@ public:
      */
     Board(istream& input)
     {
-        for (int i = 0; i < 8; ++i)
+        for (int i = 7; i >= 0; --i)
         {
             string s;
             std::getline(input, s);
@@ -445,8 +445,11 @@ public:
             for (size_t j = 0; j < s.length(); ++j)
             {
                 // Le celle dispari sono tutti spazi
-                if (j % 2 != 0 && s.at(j) != ' ')
-                    throw player_exception{ player_exception::invalid_board, "Expected space" };
+                if (j % 2 != 0)
+                {
+                    if (s.at(j) != ' ')
+                        throw player_exception{ player_exception::invalid_board, "Expected space" };
+                }
                 // Le celle pari sono le caselle della scacchiera
                 else
                 {
@@ -454,10 +457,11 @@ public:
                     // di riga e colonna è dispari, analogamente pari per le celle nere
                     // Bisogna però dividere per due il numero della colonna, dato che le
                     // celle sono tutte spaziate
-                    if ((i + j / 2) % 2 != 0)
+                    if ((i + j / 2) % 2 == 0)
                     {
                         if (s.at(j) != ' ')
                             throw player_exception{ player_exception::invalid_board, "Occupied white cell" };
+                        pieces[i][j / 2] = Player::piece::e;
                     }
                     else
                     {
@@ -566,6 +570,8 @@ public:
             }
             break;
         }
+        // Se la pedina non può muoversi nelle celle adiacenti,
+        // vede se può mangiare alcune pedine.
         return canEat(row, col);
     }
 
@@ -574,7 +580,7 @@ public:
      *
      * @param row La riga della pedina.
      * @param col La colonna della pedina.
-     * @return True se può mangiare almeno una pedina, false altrimen 
+     * @return True se può mangiare almeno una pedina, false altrime 
      */
     bool canEat(int row, int col) const
     {
@@ -583,7 +589,6 @@ public:
             col < 0 || col > 7)
             throw player_exception{ player_exception::index_out_of_bounds, "Out of board bounds" };
 
-        // TODO finire
         switch (at(row, col))
         {
         case Player::piece::x:
@@ -598,7 +603,7 @@ public:
                     return true;
                 // Lato destro
                 if (
-                    col > 1 &&
+                    col < 6 &&
                     at(row + 1, col + 1) == Player::piece::o &&
                     at(row + 2, col + 2) == Player::piece::e
                     )
@@ -606,10 +611,107 @@ public:
             }
             break;
         case Player::piece::o:
+            if (row > 1)
+            {
+                // Lato sinistro
+                if (
+                    col > 1 &&
+                    at(row - 1, col - 1) == Player::piece::x &&
+                    at(row - 2, col - 2) == Player::piece::e
+                    )
+                    return true;
+                // Lato destro
+                if (
+                    col < 6 &&
+                    at(row - 1, col + 1) == Player::piece::x &&
+                    at(row - 2, col + 2) == Player::piece::e
+                    )
+                    return true;
+            }
             break;
         case Player::piece::X:
+            // Parte sopra
+            if (row < 6)
+            {
+                // Lato sinistro
+                if (
+                    col > 1 &&
+                    (at(row + 1, col - 1) == Player::piece::o ||
+                    at(row + 1, col - 1) == Player::piece::O) &&
+                    at(row + 2, col - 2) == Player::piece::e
+                    )
+                    return true;
+                // Lato destro
+                if (
+                    col < 6 &&
+                    (at(row + 1, col + 1) == Player::piece::o ||
+                    at(row + 1, col + 1) == Player::piece::O) &&
+                    at(row + 2, col + 2) == Player::piece::e
+                    )
+                    return true;
+            }
+            // Parte sotto
+            if (row > 1)
+            {
+                // Lato sinistro
+                if (
+                    col > 1 &&
+                    (at(row - 1, col - 1) == Player::piece::o ||
+                    at(row - 1, col - 1) == Player::piece::O) &&
+                    at(row - 2, col - 2) == Player::piece::e
+                    )
+                    return true;
+                // Lato destro
+                if (
+                    col < 6 &&
+                    (at(row - 1, col + 1) == Player::piece::o ||
+                    at(row - 1, col + 1) == Player::piece::O) &&
+                    at(row - 2, col + 2) == Player::piece::e
+                    )
+                    return true;
+            }
             break;
         case Player::piece::O:
+            // Parte sopra
+            if (row < 6)
+            {
+                // Lato sinistro
+                if (
+                    col > 1 &&
+                    (at(row + 1, col - 1) == Player::piece::x ||
+                    at(row + 1, col - 1) == Player::piece::X) &&
+                    at(row + 2, col - 2) == Player::piece::e
+                    )
+                    return true;
+                // Lato destro
+                if (
+                    col < 6 &&
+                    (at(row + 1, col + 1) == Player::piece::x ||
+                    at(row + 1, col + 1) == Player::piece::X) &&
+                    at(row + 2, col + 2) == Player::piece::e
+                    )
+                    return true;
+            }
+            // Parte sotto
+            if (row > 1)
+            {
+                // Lato sinistro
+                if (
+                    col > 1 &&
+                    (at(row - 1, col - 1) == Player::piece::x ||
+                    at(row - 1, col - 1) == Player::piece::X) &&
+                    at(row - 2, col - 2) == Player::piece::e
+                    )
+                    return true;
+                // Lato destro
+                if (
+                    col < 6 &&
+                    (at(row - 1, col + 1) == Player::piece::x ||
+                    at(row - 1, col + 1) == Player::piece::X) &&
+                    at(row - 2, col + 2) == Player::piece::e
+                    )
+                    return true;
+            }
             break;
         }
         return false;
