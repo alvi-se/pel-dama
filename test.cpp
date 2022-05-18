@@ -10,11 +10,14 @@ int main()
     Board b(str);
     b.print(cout);
     cout << endl;
+    int c = 0;
     for (int i = 0; i < 8; ++i)
     {
         for (int j = 0; j < 8; ++j)
         {
-            cout << b.canEat(i, j) << endl;
+            if (b.promotion(i, j))
+                c++;
         }
     }
+    cout << c << endl;
 }
