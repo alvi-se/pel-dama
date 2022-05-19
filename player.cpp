@@ -440,7 +440,6 @@ Player::piece char_to_piece(char c)
  */
 struct Move
 {
-    Player::piece p;
     int from[2];
     int to[2];
 };
@@ -457,7 +456,7 @@ class Board
 {
 public:
     /**
-     * @brief Istanzia una board iniziale
+     * @brief Istanzia una board iniziale.
      */
     Board()
     {
@@ -487,8 +486,8 @@ public:
 
     /**
      * @brief Istanzia la board leggendo la posizione delle celle
-     * dallo stream passato per parametro
-     * @param input Lo stream di input
+     * dallo stream passato per parametro.
+     * @param input Lo stream di input.
      */
     Board(istream& input)
     {
@@ -528,6 +527,28 @@ public:
         }
     }
 
+    /**
+     * @brief Copy constructor.
+     * @param b La board da copiare.
+     */
+    Board(const Board& b)
+    {
+        for (size_t i = 0; i < 8; ++i)
+        {
+            for (size_t j = 0; j < 8; ++j)
+            {
+                pieces[i][j] = b.pieces[i][j];
+            }
+        }
+    }
+
+    /**
+     * @brief Restituisce la pedina alle specificate.
+     * @param i Riga della pedina.
+     * @param j Colonna della pedina.
+     * @return La pedina.
+     * @exception player_exception Lanciata se si esce dai bordi della board.
+     */
     Player::piece& at(int i, int j)
     {
         if (
@@ -551,7 +572,7 @@ public:
      * 
      * @param output Lo stream di output.
      */
-    void print(ostream& output)
+    void print(ostream& output) const
     {
         for (int i = 7; i >= 0; --i)
         {
@@ -779,13 +800,13 @@ public:
     }
 
     /**
-     * @brief Controlla se la pedina ha la possibilità di essere promossa a dama.
+     * @brief Controlla se la pedina può essere promossa a dama.
      * 
      * @param row La riga della pedina.
      * @param col La colonna della pedina.
      * @return True se può essere promossa a dama, false altrimenti. 
      */
-    bool promotion(int row, int col) const
+    bool canBePromoted(int row, int col) const
     {
         switch (at(row, col))
         {
@@ -840,7 +861,7 @@ public:
      * @param col La colonna della pedina.
      * @return True se è minacciata, false altrimenti. 
      */
-    bool threatened(int row, int col) const
+    bool isThreatened(int row, int col) const
     {
         // Una pedina ai bordi non può mai essere minacciata!
         if (
@@ -907,16 +928,125 @@ public:
      * 
      * @param b La board di inizio della mossa.
      * @return La mossa estratta.
-     * @throws PlayerException se la mossa non è valida.
+     * @exception player_exception Viene lanciata se la mossa non è valida.
      */
-    Move getMove(const Board& b)
+    Move getMove(const Board& b) const
     {
         // TODO
     }
 
-    Board applyMove(const Move& m)
+    /**
+     * @brief Applica una mossa alla board corrente, restituendo una board nuova.
+     * 
+     * @param m La mossa da applicare alla board.
+     * @return La board con la mossa applicata.
+     * @exception player_exception Viene lanciata se la mossa non è valida.
+     */
+    Board applyMove(const Move& m) const
     {
-        // TODO
+        int rowDelta = m.to[0] - m.from[0];
+        int colDelta = m.to[1] - m.from[1];
+        if (
+            // Il movimento deve essere in diagonale
+            std::abs(rowDelta) != std::abs(colDelta) ||
+            // Deve muoversi almeno di una celle
+            rowDelta < -2 ||
+            // Non può muoversi più di due celle
+            rowDelta > 2 ||
+            // Non si può muovere una cella vuota
+            at(m.from[0], m.from[1]) == Player::piece::e ||
+            // Non si può arrivare su una cella non vuota
+            at(m.to[0], m.to[1]) != Player::piece::e
+            ) throw player_exception{ player_exception::invalid_board, "Invalid move" };
+
+        Board b(*this);
+        if (
+            b.at(m.from[0], m.from[1]) == Player::piece::o &&
+            rowDelta > 0
+            ) throw player_exception{ player_exception::invalid_board, "o piece can't go upwards." };
+        else if (
+            b.at(m.from[0], m.from[1]) == Player::piece::x &&
+            rowDelta < 0
+            ) throw player_exception{ player_exception::invalid_board, "x piece can't go downwards." };
+
+        if (std::abs(rowDelta) == 2)
+        {
+            // Controllo se la pedina in mezzo è "mangiabile"
+            switch (b.at(m.from[0], m.from[1]))
+            {
+            case Player::piece::o:
+                if (
+                    b.at(
+                        m.from[0] + (rowDelta / 2),
+                        m.from[1] + (colDelta / 2)
+                    ) != Player::piece::x
+                    ) throw player_exception{ player_exception::invalid_board, "Invalid move" };
+                break;
+            case Player::piece::x:
+                if (
+                    b.at(
+                        m.from[0] + (rowDelta / 2),
+                        m.from[1] + (colDelta / 2)
+                    ) != Player::piece::o
+                    ) throw player_exception{ player_exception::invalid_board, "Invalid move" };
+                break;
+            case Player::piece::O:
+                if (
+                    b.at(
+                        m.from[0] + (rowDelta / 2),
+                        m.from[1] + (colDelta / 2)
+                    ) != Player::piece::x ||
+                    b.at(
+                        m.from[0] + (rowDelta / 2),
+                        m.from[1] + (colDelta / 2)
+                    ) != Player::piece::X
+                    ) throw player_exception{ player_exception::invalid_board, "Invalid move" };
+                break;
+                case Player::piece::X:
+                if (
+                    b.at(
+                        m.from[0] + (rowDelta / 2),
+                        m.from[1] + (colDelta / 2)
+                    ) != Player::piece::o ||
+                    b.at(
+                        m.from[0] + (rowDelta / 2),
+                        m.from[1] + (colDelta / 2)
+                    ) != Player::piece::O
+                    ) throw player_exception{ player_exception::invalid_board, "Invalid move" };
+                break;
+            }
+            b.at(
+                m.from[0] + (rowDelta / 2),
+                m.from[1] + (colDelta / 2)
+            ) = Player::piece::e;
+        }
+
+        b.at(m.from[0], m.from[1]) = Player::piece::e;
+                              // ↓ Attenzione, è la board attuale, non quella nuova!
+        b.at(m.to[0], m.to[1]) = at(m.from[0], m.from[1]);
+
+        // Promozione delle pedine
+        if (
+            m.to[0] == 0 &&
+            at(m.from[0], m.from[1]) == Player::piece::o
+        ) b.promote(m.to[0], m.to[1]);
+        if (
+            m.to[0] == 7 &&
+            at(m.from[0], m.from[1]) == Player::piece::x
+        ) b.promote(m.to[0], m.to[1]);
+        return b;
+    }
+
+    void promote(int row, int col)
+    {
+        switch (at(row, col))
+        {
+        case Player::piece::o:
+            at(row, col) = Player::piece::O;
+            break;
+        case Player::piece::x:
+            at(row, col) = Player::piece::X;
+        }
     }
 
     bool operator==(const Board& b) const

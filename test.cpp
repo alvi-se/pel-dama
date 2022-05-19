@@ -10,14 +10,19 @@ int main()
     Board b(str);
     b.print(cout);
     cout << endl;
-    int c = 0;
-    for (int i = 0; i < 8; ++i)
+    Move m {
+        { 5, 6 },
+        { 6, 7 }
+    };
+    cout << "Nuova board" << endl;
+    Board newone;
+    try
     {
-        for (int j = 0; j < 8; ++j)
-        {
-            if (b.promotion(i, j))
-                c++;
-        }
+        newone = b.applyMove(m);
+        newone.print(cout);
+        cout << endl;
+    } catch(player_exception p)
+    {
+        cout << p.msg << endl;
     }
-    cout << c << endl;
 }
