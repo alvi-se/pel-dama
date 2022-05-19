@@ -6,7 +6,7 @@ using std::endl;
 
 int main()
 {
-    ifstream str("board_1.txt");
+    ifstream str("board.txt");
     Board b(str);
     b.print(cout);
     cout << endl;

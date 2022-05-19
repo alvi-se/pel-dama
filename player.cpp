@@ -311,7 +311,17 @@ public:
         _size = size;
     }
 
-    Vector(const Vector& v)
+    Vector(size_t size, const T& el)
+    {
+        data = new T[size];
+        _size = size;
+        for (size_t i = 0; i < size; ++i)
+        {
+            data[i] = el;
+        }
+    }
+
+    Vector(const Vector<T>& v)
     {
         data = new T[v._size];
         _size = v._size;
@@ -326,6 +336,42 @@ public:
         if (index >= _size)
             throw player_exception{ player_exception::index_out_of_bounds, "Out of vector bounds" };
         return data[index];
+    }
+
+    const T& at(size_t index) const
+    {
+        if (index >= _size)
+            throw player_exception{ player_exception::index_out_of_bounds, "Out of vector bounds" };
+        return data[index];
+    }
+
+    T& operator[](size_t index)
+    {
+        if (index >= _size)
+            throw player_exception{ player_exception::index_out_of_bounds, "Out of vector bounds" };
+        return data[index];
+    }
+    
+    const T& operator[](size_t index) const
+    {
+        if (index >= _size)
+            throw player_exception{ player_exception::index_out_of_bounds, "Out of vector bounds" };
+        return data[index];
+    }
+
+    Vector<T>& operator=(const Vector<T>& v)
+    {
+        if (this != v)
+        {
+            delete[] data;
+            data = new T[v._size];
+            _size = v._size;
+            for (size_t i = 0; i < _size; ++i)
+            {
+                data[i] = v.data[i];
+            }
+        }
+        return *this;
     }
 
     size_t size() const
@@ -349,6 +395,12 @@ private:
 
 #pragma region GAME ELEMENTS AND FUNCTIONS
 
+/**
+ * @brief Converte una pedina nel suo corrispettivo carattere.
+ * 
+ * @param p La pedina.
+ * @return Il carattere.
+ */
 char piece_to_char(Player::piece p)
 {
     switch (p)
@@ -363,6 +415,12 @@ char piece_to_char(Player::piece p)
     }
 }
 
+/**
+ * @brief Converte un carattere all'enum Piece.
+ * 
+ * @param c Il carattere.
+ * @return La pedina.
+ */
 Player::piece char_to_piece(char c)
 {
     switch (c)
@@ -378,15 +436,13 @@ Player::piece char_to_piece(char c)
 }
 
 /**
- * @brief Contiene i dati della mossa di un pezzo.
- * Se
+ * @brief Contiene i dati della mossa di una pedina.
  */
 struct Move
 {
     Player::piece p;
     int from[2];
     int to[2];
-    int eats[2];
 };
 
 /**
@@ -490,6 +546,11 @@ public:
         return pieces[i][j];
     }
 
+    /**
+     * @brief Stampa la board in uno stream.
+     * 
+     * @param output Lo stream di output.
+     */
     void print(ostream& output)
     {
         for (int i = 7; i >= 0; --i)
@@ -580,7 +641,7 @@ public:
      *
      * @param row La riga della pedina.
      * @param col La colonna della pedina.
-     * @return True se può mangiare almeno una pedina, false altrime 
+     * @return True se può mangiare almeno una pedina, false altrimenti.
      */
     bool canEat(int row, int col) const
     {
@@ -717,6 +778,13 @@ public:
         return false;
     }
 
+    /**
+     * @brief Controlla se la pedina ha la possibilità di essere promossa a dama.
+     * 
+     * @param row La riga della pedina.
+     * @param col La colonna della pedina.
+     * @return True se può essere promossa a dama, false altrimenti. 
+     */
     bool promotion(int row, int col) const
     {
         switch (at(row, col))
@@ -725,42 +793,128 @@ public:
         case Player::piece::X: return false;
         case Player::piece::O: return false;
         case Player::piece::x:
-            if (row != 6)
-                return false;
-            // Lato sinistro
-            else if (
-                col > 0 &&
-                at(7, col - 1) == Player::piece::e
-                )
-                return true;
-            // Lato destro
-            else if (
-                col < 7 &&
-                at(7, col + 1) == Player::piece::e
-                )
+            if (row == 6)
+            {
+                // Lato sinistro
+                if (
+                    col > 0 &&
+                    at(7, col - 1) == Player::piece::e
+                    )
+                    return true;
+                // Lato destro
+                else if (
+                    col < 7 &&
+                    at(7, col + 1) == Player::piece::e
+                    )
+                    return true;
+            }
+            else if (row == 5 && canEat(row, col))
                 return true;
             break;
         case Player::piece::o:
-            if (row != 1)
-                return false;
-            // Lato sinistro
-            else if (
-                col > 0 &&
-                at(0, col - 1) == Player::piece::e
-                )
-                return true;
-            // Lato destro
-            else if (
-                col < 7 &&
-                at(0, col + 1) == Player::piece::e
-                )
+            if (row == 1)
+            {
+                // Lato sinistro
+                if (
+                    col > 0 &&
+                    at(0, col - 1) == Player::piece::e
+                    )
+                    return true;
+                // Lato destro
+                else if (
+                    col < 7 &&
+                    at(0, col + 1) == Player::piece::e
+                    )
+                    return true;
+            }
+            else if (row == 2 && canEat(row, col))
                 return true;
             break;
         }
         return false;
     }
 
+    /**
+     * @brief Controlla se la pedina è minacciata da un'altra avversaria.
+     * @param row La riga della pedina.
+     * @param col La colonna della pedina.
+     * @return True se è minacciata, false altrimenti. 
+     */
+    bool threatened(int row, int col) const
+    {
+        // Una pedina ai bordi non può mai essere minacciata!
+        if (
+            row <= 0 ||
+            row >= 7 ||
+            col <= 0 ||
+            col >= 7
+            ) return false;
+
+        switch (at(row, col))
+        {
+        case Player::piece::o:
+            if (
+                (at(row - 1, col - 1) == Player::piece::x ||
+                at(row - 1, col - 1) == Player::piece::X) &&
+                at(row + 1, col + 1) == Player::piece::e
+                ) return true;
+            if (
+                (at(row - 1, col + 1) == Player::piece::x ||
+                at(row - 1, col + 1) == Player::piece::X) &&
+                at(row + 1, col - 1) == Player::piece::e
+                ) return true;
+            break;
+        case Player::piece::x:
+            if (
+                (at(row + 1, col - 1) == Player::piece::o ||
+                at(row + 1, col - 1) == Player::piece::O) &&
+                at(row - 1, col + 1) == Player::piece::e
+                ) return true;
+            if (
+                (at(row + 1, col + 1) == Player::piece::o ||
+                at(row + 1, col + 1) == Player::piece::O) &&
+                at(row - 1, col - 1) == Player::piece::e
+                ) return true;
+            break;
+        case Player::piece::O:
+            if (
+                at(row - 1, col - 1) == Player::piece::X &&
+                at(row + 1, col + 1) == Player::piece::e
+                ) return true;
+            if (
+                at(row - 1, col + 1) == Player::piece::X &&
+                at(row + 1, col - 1) == Player::piece::e
+                ) return true;
+            break;
+        case Player::piece::X:
+            if (
+                at(row + 1, col - 1) == Player::piece::O &&
+                at(row - 1, col + 1) == Player::piece::e
+                ) return true;
+            if (
+                at(row + 1, col + 1) == Player::piece::O &&
+                at(row - 1, col - 1) == Player::piece::e
+                ) return true;
+            break;
+        }
+        return false;
+    }
+    
+    /**
+     * @brief Confronta le due board ed estrae la mossa compiuta.
+     * La board attuale sarà quella "di arrivo", quella passata come parametro
+     * invece è quella "di partenza".
+     * 
+     * @param b La board di inizio della mossa.
+     * @return La mossa estratta.
+     * @throws PlayerException se la mossa non è valida.
+     */
     Move getMove(const Board& b)
+    {
+        // TODO
+    }
+
+    Board applyMove(const Move& m)
     {
         // TODO
     }
@@ -780,6 +934,7 @@ public:
     }
 
 private:
+    //Vector<Vector<Player::piece>> pieces = Vector<Vector<Player::piece>>(8, Vector<Player::piece>(8));
     Player::piece pieces[8][8];
 };
 
@@ -789,11 +944,6 @@ struct Player::Impl
 {
     int player_nr;
     List<Board> history;
-
-    bool canMove(const Board& b, int row, int col)
-    {
-
-    }
 };
 
 Player::Player(int player_nr)
