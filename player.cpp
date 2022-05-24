@@ -191,6 +191,11 @@ public:
         return pc->data;
     }
 
+    bool isEmpty() const
+    {
+        return head != nullptr;
+    }
+
     void remove(int pos)
     {
         if (pos == 0)
@@ -442,6 +447,18 @@ struct Move
 {
     int from[2];
     int to[2];
+};
+
+/**
+ * @brief Specifica la direzione in cui si deve muovere la pedina.
+ * Si poteva fare anche con un int, ma con un enum è più chiaro.
+ */
+enum MoveDirection
+{
+    U_L,
+    U_R,
+    D_L,
+    D_R
 };
 
 /**
@@ -935,6 +952,44 @@ public:
         // TODO
     }
 
+    List<int[2]> getMovablePieces(int player_nr)
+    {
+        List<int[2]> movable;
+        if (player_nr < 1 || player_nr > 2)
+            throw player_exception{player_exception::index_out_of_bounds, "Player number not valid"};
+        for (int i = 0; i < 8; ++i)
+        {
+            for (int j = 0; j < 8; ++j)
+            {
+                if (player_nr == 1)
+                {
+                    if (
+                        at(i, j) == Player::piece::x ||
+                        at(i, j) == Player::piece::X
+                        )
+                        if (canMove(i, j))
+                        {
+                            int pos[2] = {i, j};
+                            movable.push_back(pos);
+                        }
+                }
+                else
+                {
+                    if (
+                        at(i, j) == Player::piece::o ||
+                        at(i, j) == Player::piece::O
+                        )
+                        if (canMove(i, j))
+                        {
+                            int pos[2] = {i, j};
+                            movable.push_back(pos);
+                        }
+                }
+            }
+        }
+        return movable;
+    }
+
     /**
      * @brief Applica una mossa alla board corrente, restituendo una board nuova.
      * 
@@ -1148,7 +1203,7 @@ void Player::init_board(const std::string& filename) const
 
 void Player::move()
 {
-
+    
 }
 
 bool Player::valid_move() const
