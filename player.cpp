@@ -127,35 +127,35 @@ public:
     T& front()
     {
         if (head == nullptr)
-            throw new player_exception{ player_exception::index_out_of_bounds, "No elements in stack" };
+            throw new player_exception{ player_exception::index_out_of_bounds, "No elements in list" };
         return head->data;
     }
 
     T& front() const
     {
         if (head == nullptr)
-            throw new player_exception{ player_exception::index_out_of_bounds, "No elements in stack" };
+            throw new player_exception{ player_exception::index_out_of_bounds, "No elements in list" };
         return head->data;
     }
 
     T& back()
     {
         if (head == nullptr)
-            throw new player_exception{ player_exception::index_out_of_bounds, "No elements in stack" };
+            throw new player_exception{ player_exception::index_out_of_bounds, "No elements in list" };
         return lastCell()->data;
     }
 
     T& back() const
     {
         if (head == nullptr)
-            throw new player_exception{ player_exception::index_out_of_bounds, "No elements in stack" };
+            throw new player_exception{ player_exception::index_out_of_bounds, "No elements in list" };
         return lastCell()->data;
     }
 
     void pop_front()
     {
         if (head == nullptr)
-            throw player_exception{ player_exception::index_out_of_bounds, "Tried to pop but stack is empty." };
+            throw player_exception{ player_exception::index_out_of_bounds, "Tried to pop but list is empty" };
         Pcell c = head;
         head = head->next;
         delete c;
@@ -167,12 +167,12 @@ public:
         while (pos > 0)
         {
             if (pc == nullptr)
-                throw player_exception{ player_exception::index_out_of_bounds, "Out of stack bounds" };
+                throw player_exception{ player_exception::index_out_of_bounds, "Out of list bounds" };
             pc = pc->next;
             --pos;
         }
         if (pc == nullptr)
-            throw player_exception{ player_exception::index_out_of_bounds, "Out of stack bounds" };
+            throw player_exception{ player_exception::index_out_of_bounds, "Out of list bounds" };
         return pc->data;
     }
 
@@ -182,12 +182,12 @@ public:
         while (pos > 0)
         {
             if (pc == nullptr)
-                throw player_exception{ player_exception::index_out_of_bounds, "Out of stack bounds" };
+                throw player_exception{ player_exception::index_out_of_bounds, "Out of list bounds" };
             pc = pc->next;
             --pos;
         }
         if (pc == nullptr)
-            throw player_exception{ player_exception::index_out_of_bounds, "Out of stack bounds" };
+            throw player_exception{ player_exception::index_out_of_bounds, "Out of list bounds" };
         return pc->data;
     }
 
@@ -475,13 +475,20 @@ Player::piece char_to_piece(char c)
     }
 }
 
+int get_opponent(int player_nr)
+{
+    if (player_nr == 1) return 2;
+    if (player_nr == 2) return 1;
+    throw player_exception{ player_exception::index_out_of_bounds, "Invalid player number" };
+}
+
 /**
  * @brief Contiene i dati della mossa di una pedina.
  */
 struct Move
 {
-    int from[2];
-    int to[2];
+    Vector<int> from {2};
+    Vector<int> to {2};
 };
 
 /**
@@ -639,6 +646,74 @@ public:
                 output << endl;
         }
     }
+
+    // FIXME finire
+    List<Move> getPossibleMoves(int row, int col) const
+    {
+        List<Move> moves;
+        if (
+            row < 0 || row > 7 ||
+            col < 0 || col > 7)
+            throw player_exception{ player_exception::index_out_of_bounds, "Out of board bounds" };
+
+        switch (at(row, col))
+        {
+        case Player::piece::x:
+            // Verso l'alto
+            if (row < 7)
+            {
+                // Lato sinistro
+                if (col > 0 && at(row + 1, col - 1) == Player::piece::e)
+                {
+                    // TODO
+                    Move m;
+                    m.from.at(0) = row;
+                    m.from.at(1) = col;
+                }
+                // Lato destro
+                if (col < 7 && at(row + 1, col + 1) == Player::piece::e)
+                    return true;
+            }
+            break;
+        case Player::piece::o:
+            // Verso il basso
+            if (row > 0)
+            {
+                // Lato sinistro
+                if (col > 0 && at(row - 1, col - 1) == Player::piece::e)
+                    return true;
+                // Lato destro
+                if (col < 7 && at(row - 1, col + 1) == Player::piece::e)
+                    return true;
+            }
+            break;
+        case Player::piece::X:
+        case Player::piece::O:
+            // Verso l'alto
+            if (row < 7)
+            {
+                // Lato sinistro
+                if (col > 0 && at(row + 1, col - 1) == Player::piece::e)
+                    return true;
+                // Lato destro
+                if (col < 7 && at(row + 1, col + 1) == Player::piece::e)
+                    return true;
+            }
+            // Verso il basso
+            if (row > 0)
+            {
+                // Lato sinistro
+                if (col > 0 && at(row - 1, col - 1) == Player::piece::e)
+                    return true;
+                // Lato destro
+                if (col < 7 && at(row - 1, col + 1) == Player::piece::e)
+                    return true;
+            }
+            break;
+        }
+        return moves;
+    }
+
     /**
      * @brief Controlla se una pedina si può muovere nella board attuale.
      * La possibilità di mangiare una pedina avversaria viene inclusa.
@@ -707,6 +782,11 @@ public:
         // Se la pedina non può muoversi nelle celle adiacenti,
         // vede se può mangiare alcune pedine.
         return canEat(row, col);
+    }
+
+    List<Move> getPossibleEats(int row, int col) const
+    {
+        // TODO
     }
 
     /**
@@ -1158,8 +1238,7 @@ public:
     }
 
 private:
-    Vector<Vector<Player::piece>> pieces = Vector<Vector<Player::piece>>(8, Vector<Player::piece>(8));
-    //Player::piece pieces[8][8];
+    Vector<Vector<Player::piece>> pieces{ 8, Vector<Player::piece>{8} };
 };
 
 #pragma endregion
@@ -1266,22 +1345,23 @@ void Player::pop()
 
 bool Player::wins(int player_nr) const
 {
-    // TODO
+    return loses(get_opponent(player_nr));
 }
 
 bool Player::wins() const
 {
-    // TODO
+    return wins(pimpl->player_nr);
 }
 
 bool Player::loses(int player_nr) const
 {
-    // TODO
+    List<Vector<int>> movable(pimpl->history.front().getMovablePieces(pimpl->player_nr));
+    return movable.isEmpty();
 }
 
 bool Player::loses() const
 {
-    // TODO
+    return loses(pimpl->player_nr);
 }
 
 int Player::recurrence() const
