@@ -89,8 +89,8 @@ public:
 
     List(List<T>&& l)
     {
-        head = l->head;
-        l->head = nullptr;
+        head = l.head;
+        l.head = nullptr;
     }
 
     ~List()
@@ -310,16 +310,29 @@ template <typename T>
 class Vector
 {
 public:
+    Vector()
+    {
+        // 10 come capacità è abbastanza, considerato
+        // che si utilizza per righe/colonne della board
+        // (quindi di dimensione 8) o per esprimere coordinate
+        // (dimensione 2)
+        _capacity = 10;
+        data = new T[_capacity];
+        _size = 0;
+    }
+
     Vector(size_t size)
     {
         data = new T[size];
         _size = size;
+        _capacity = size;
     }
 
     Vector(size_t size, const T& el)
     {
         data = new T[size];
         _size = size;
+        _capacity = size;
         for (size_t i = 0; i < size; ++i)
         {
             data[i] = el;
@@ -364,9 +377,19 @@ public:
         return data[index];
     }
 
+    void push_back(T el)
+    {
+        if (_size >= _capacity)
+        {
+            _capacity *= 2;
+            data = static_cast<T*>(realloc(data, _capacity));
+        }
+        data[_size++] = el;
+    }
+
     Vector<T>& operator=(const Vector<T>& v)
     {
-        if (this != v)
+        if (this != &v)
         {
             delete[] data;
             data = new T[v._size];
@@ -384,6 +407,19 @@ public:
         return _size;
     }
 
+    size_t capacity() const
+    {
+        return _capacity;
+    }
+
+    void print(ostream& output)
+    {
+        output << "[ ";
+        for (size_t i = 0; i < _size; ++i)
+            output << at(i) << ' ';
+        output << ']';
+    }
+
     ~Vector()
     {
         delete[] data;
@@ -392,8 +428,7 @@ public:
 private:
     T* data;
     size_t _size;
-
-    Vector();
+    size_t _capacity;
 };
 
 #pragma endregion
@@ -952,9 +987,9 @@ public:
         // TODO
     }
 
-    List<int[2]> getMovablePieces(int player_nr)
+    List<Vector<int>> getMovablePieces(int player_nr)
     {
-        List<int[2]> movable;
+        List<Vector<int>> movable;
         if (player_nr < 1 || player_nr > 2)
             throw player_exception{player_exception::index_out_of_bounds, "Player number not valid"};
         for (int i = 0; i < 8; ++i)
@@ -969,7 +1004,9 @@ public:
                         )
                         if (canMove(i, j))
                         {
-                            int pos[2] = {i, j};
+                            Vector<int> pos(2);
+                            pos.at(0) = i;
+                            pos.at(1) = j;
                             movable.push_back(pos);
                         }
                 }
@@ -981,7 +1018,9 @@ public:
                         )
                         if (canMove(i, j))
                         {
-                            int pos[2] = {i, j};
+                            Vector<int> pos(2);
+                            pos.at(0) = i;
+                            pos.at(1) = j;
                             movable.push_back(pos);
                         }
                 }
@@ -1119,8 +1158,8 @@ public:
     }
 
 private:
-    //Vector<Vector<Player::piece>> pieces = Vector<Vector<Player::piece>>(8, Vector<Player::piece>(8));
-    Player::piece pieces[8][8];
+    Vector<Vector<Player::piece>> pieces = Vector<Vector<Player::piece>>(8, Vector<Player::piece>(8));
+    //Player::piece pieces[8][8];
 };
 
 #pragma endregion
