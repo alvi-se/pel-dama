@@ -23,6 +23,17 @@ struct Cell
     Cell* next;
 };
 
+struct Position
+{
+    int row;
+    int col;
+
+    void print(ostream& output)
+    {
+        output << '[' << row << ", " << col << ']';
+    }
+};
+
 template <typename T>
 class List
 {
@@ -234,6 +245,21 @@ public:
             head = l.head;
             l.head = nullptr;
         }
+        return *this;
+    }
+
+    List& operator+(const List& l) const
+    {
+        List<T> l1{*this};
+        Pcell l2 = copy(l);
+        l1.lastCell()->next = l2;
+        return l1;
+    }
+    
+    List& operator+=(const List& l)
+    {
+        Pcell l2 = copy(l);
+        lastCell()->next = l2;
         return *this;
     }
 
@@ -482,13 +508,23 @@ int get_opponent(int player_nr)
     throw player_exception{ player_exception::index_out_of_bounds, "Invalid player number" };
 }
 
+void assert_position(Position pos)
+{
+    if (
+        pos.row < 0 ||
+        pos.col < 0 ||
+        pos.row > 7 ||
+        pos.col > 7
+    ) throw player_exception{player_exception::index_out_of_bounds, "Position not valid."};
+}
+
 /**
  * @brief Contiene i dati della mossa di una pedina.
  */
 struct Move
 {
-    Vector<int> from {2};
-    Vector<int> to {2};
+    Position from;
+    Position to;
 };
 
 /**
@@ -617,6 +653,11 @@ public:
         return pieces[i][j];
     }
 
+    Player::piece& at(Position pos)
+    {
+        return at(pos.row, pos.col);
+    }
+
     const Player::piece& at(int i, int j) const
     {
         if (
@@ -624,6 +665,11 @@ public:
             j < 0 || j >= 8)
             throw player_exception{ player_exception::index_out_of_bounds, "Invalid position" };
         return pieces[i][j];
+    }
+
+    const Player::piece& at(Position pos) const
+    {
+        return at(pos.row, pos.col);
     }
 
     /**
@@ -647,71 +693,86 @@ public:
         }
     }
 
-    // FIXME finire
-    List<Move> getPossibleMoves(int row, int col) const
+    List<Move> getPossibleMoves(Position pos) const
     {
         List<Move> moves;
-        if (
-            row < 0 || row > 7 ||
-            col < 0 || col > 7)
-            throw player_exception{ player_exception::index_out_of_bounds, "Out of board bounds" };
+        assert_position(pos);
 
-        switch (at(row, col))
+        switch (at(pos))
         {
         case Player::piece::x:
             // Verso l'alto
-            if (row < 7)
+            if (pos.row < 7)
             {
                 // Lato sinistro
-                if (col > 0 && at(row + 1, col - 1) == Player::piece::e)
-                {
-                    // TODO
-                    Move m;
-                    m.from.at(0) = row;
-                    m.from.at(1) = col;
-                }
+                if (pos.col > 0 && at(pos.row + 1, pos.col - 1) == Player::piece::e)
+                    moves.push_back(Move{
+                        pos,
+                        Position{pos.row + 1, pos.col - 1}
+                    });
                 // Lato destro
-                if (col < 7 && at(row + 1, col + 1) == Player::piece::e)
-                    return true;
+                if (pos.col < 7 && at(pos.row + 1, pos.col + 1) == Player::piece::e)
+                    moves.push_back(Move{
+                        pos,
+                        Position{pos.row + 1, pos.col + 1}
+                    });
             }
             break;
         case Player::piece::o:
             // Verso il basso
-            if (row > 0)
+            if (pos.row > 0)
             {
                 // Lato sinistro
-                if (col > 0 && at(row - 1, col - 1) == Player::piece::e)
-                    return true;
+                if (pos.col > 0 && at(pos.row - 1, pos.col - 1) == Player::piece::e)
+                    moves.push_back(Move{
+                        pos,
+                        Position{pos.row - 1, pos.col - 1}
+                    });
                 // Lato destro
-                if (col < 7 && at(row - 1, col + 1) == Player::piece::e)
-                    return true;
+                if (pos.col < 7 && at(pos.row - 1, pos.col + 1) == Player::piece::e)
+                    moves.push_back(Move{
+                        pos,
+                        Position{pos.row - 1, pos.col + 1}
+                    });
             }
             break;
         case Player::piece::X:
         case Player::piece::O:
             // Verso l'alto
-            if (row < 7)
+            if (pos.row < 7)
             {
                 // Lato sinistro
-                if (col > 0 && at(row + 1, col - 1) == Player::piece::e)
-                    return true;
+                if (pos.col > 0 && at(pos.row + 1, pos.col - 1) == Player::piece::e)
+                    moves.push_back(Move{
+                        pos,
+                        Position{pos.row + 1, pos.col - 1}
+                    });
                 // Lato destro
-                if (col < 7 && at(row + 1, col + 1) == Player::piece::e)
-                    return true;
+                if (pos.col < 7 && at(pos.row + 1, pos.col + 1) == Player::piece::e)
+                    moves.push_back(Move{
+                        pos,
+                        Position{pos.row + 1, pos.col + 1}
+                    });
             }
             // Verso il basso
-            if (row > 0)
+            if (pos.row > 0)
             {
                 // Lato sinistro
-                if (col > 0 && at(row - 1, col - 1) == Player::piece::e)
-                    return true;
+                if (pos.col > 0 && at(pos.row - 1, pos.col - 1) == Player::piece::e)
+                    moves.push_back(Move{
+                        pos,
+                        Position{pos.row - 1, pos.col - 1}
+                    });
                 // Lato destro
-                if (col < 7 && at(row - 1, col + 1) == Player::piece::e)
-                    return true;
+                if (pos.col < 7 && at(pos.row - 1, pos.col + 1) == Player::piece::e)
+                    moves.push_back(Move{
+                        pos,
+                        Position{pos.row - 1, pos.col + 1}
+                    });
             }
             break;
         }
-        return moves;
+        return moves;// += getPossibleJumps(pos);
     }
 
     /**
@@ -781,14 +842,140 @@ public:
         }
         // Se la pedina non può muoversi nelle celle adiacenti,
         // vede se può mangiare alcune pedine.
-        return canEat(row, col);
+        return canJump(row, col);
     }
-
-    List<Move> getPossibleEats(int row, int col) const
+/*
+    List<Move> getPossibleJumps(Position pos) const
     {
-        // TODO
-    }
-
+        List<Move> jumps;
+        assert_position(pos);
+        switch (at(pos.row, pos.col))
+        {
+        case Player::piece::x:
+            if (pos.row < 6)
+            {
+                // Lato sinistro
+                if (
+                    pos.col > 1 &&
+                    at(pos.row + 1, pos.col - 1) == Player::piece::o &&
+                    at(pos.row + 2, pos.col - 2) == Player::piece::e
+                    )
+                    jumps.push_back();
+                // Lato destro
+                if (
+                    pos.col < 6 &&
+                    at(pos.row + 1, pos.col + 1) == Player::piece::o &&
+                    at(pos.row + 2, pos.col + 2) == Player::piece::e
+                    )
+                    return true;
+            }
+            break;
+        case Player::piece::o:
+            if (pos.row > 1)
+            {
+                // Lato sinistro
+                if (
+                    pos.col > 1 &&
+                    at(pos.row - 1, pos.col - 1) == Player::piece::x &&
+                    at(pos.row - 2, pos.col - 2) == Player::piece::e
+                    )
+                    return true;
+                // Lato destro
+                if (
+                    pos.col < 6 &&
+                    at(pos.row - 1, pos.col + 1) == Player::piece::x &&
+                    at(pos.row - 2, pos.col + 2) == Player::piece::e
+                    )
+                    return true;
+            }
+            break;
+        case Player::piece::X:
+            // Parte sopra
+            if (pos.row < 6)
+            {
+                // Lato sinistro
+                if (
+                    pos.col > 1 &&
+                    (at(pos.row + 1, pos.col - 1) == Player::piece::o ||
+                    at(pos.row + 1, pos.col - 1) == Player::piece::O) &&
+                    at(pos.row + 2, pos.col - 2) == Player::piece::e
+                    )
+                    return true;
+                // Lato destro
+                if (
+                    pos.col < 6 &&
+                    (at(pos.row + 1, pos.col + 1) == Player::piece::o ||
+                    at(pos.row + 1, pos.col + 1) == Player::piece::O) &&
+                    at(pos.row + 2, pos.col + 2) == Player::piece::e
+                    )
+                    return true;
+            }
+            // Parte sotto
+            if (pos.row > 1)
+            {
+                // Lato sinistro
+                if (
+                    pos.col > 1 &&
+                    (at(pos.row - 1, pos.col - 1) == Player::piece::o ||
+                    at(pos.row - 1, pos.col - 1) == Player::piece::O) &&
+                    at(pos.row - 2, pos.col - 2) == Player::piece::e
+                    )
+                    return true;
+                // Lato destro
+                if (
+                    pos.col < 6 &&
+                    (at(pos.row - 1, pos.col + 1) == Player::piece::o ||
+                    at(pos.row - 1, pos.col + 1) == Player::piece::O) &&
+                    at(pos.row - 2, pos.col + 2) == Player::piece::e
+                    )
+                    return true;
+            }
+            break;
+        case Player::piece::O:
+            // Parte sopra
+            if (pos.row < 6)
+            {
+                // Lato sinistro
+                if (
+                    pos.col > 1 &&
+                    (at(pos.row + 1, pos.col - 1) == Player::piece::x ||
+                    at(pos.row + 1, pos.col - 1) == Player::piece::X) &&
+                    at(pos.row + 2, pos.col - 2) == Player::piece::e
+                    )
+                    return true;
+                // Lato destro
+                if (
+                    pos.col < 6 &&
+                    (at(pos.row + 1, pos.col + 1) == Player::piece::x ||
+                    at(pos.row + 1, pos.col + 1) == Player::piece::X) &&
+                    at(pos.row + 2, pos.col + 2) == Player::piece::e
+                    )
+                    return true;
+            }
+            // Parte sotto
+            if (pos.row > 1)
+            {
+                // Lato sinistro
+                if (
+                    pos.col > 1 &&
+                    (at(pos.row - 1, pos.col - 1) == Player::piece::x ||
+                    at(pos.row - 1, pos.col - 1) == Player::piece::X) &&
+                    at(pos.row - 2, pos.col - 2) == Player::piece::e
+                    )
+                    return true;
+                // Lato destro
+                if (
+                    pos.col < 6 &&
+                    (at(pos.row - 1, pos.col + 1) == Player::piece::x ||
+                    at(pos.row - 1, pos.col + 1) == Player::piece::X) &&
+                    at(pos.row - 2, pos.col + 2) == Player::piece::e
+                    )
+                    return true;
+            }
+            break;
+        }
+        return false;
+*/
     /**
      * @brief Controlla se la pedina ha la possibilità di mangiare pedine avversarie.
      *
@@ -796,7 +983,7 @@ public:
      * @param col La colonna della pedina.
      * @return True se può mangiare almeno una pedina, false altrimenti.
      */
-    bool canEat(int row, int col) const
+    bool canJump(int row, int col) const
     {
         if (
             row < 0 || row > 7 ||
@@ -961,7 +1148,7 @@ public:
                     )
                     return true;
             }
-            else if (row == 5 && canEat(row, col))
+            else if (row == 5 && canJump(row, col))
                 return true;
             break;
         case Player::piece::o:
@@ -980,7 +1167,7 @@ public:
                     )
                     return true;
             }
-            else if (row == 2 && canEat(row, col))
+            else if (row == 2 && canJump(row, col))
                 return true;
             break;
         }
@@ -1118,8 +1305,8 @@ public:
      */
     Board applyMove(const Move& m) const
     {
-        int rowDelta = m.to[0] - m.from[0];
-        int colDelta = m.to[1] - m.from[1];
+        int rowDelta = m.to.row - m.from.row;
+        int colDelta = m.to.col - m.from.col;
         if (
             // Il movimento deve essere in diagonale
             std::abs(rowDelta) != std::abs(colDelta) ||
@@ -1128,86 +1315,86 @@ public:
             // Non può muoversi più di due celle
             rowDelta > 2 ||
             // Non si può muovere una cella vuota
-            at(m.from[0], m.from[1]) == Player::piece::e ||
+            at(m.from.row, m.from.col) == Player::piece::e ||
             // Non si può arrivare su una cella non vuota
-            at(m.to[0], m.to[1]) != Player::piece::e
+            at(m.to.row, m.to.col) != Player::piece::e
             ) throw player_exception{ player_exception::invalid_board, "Invalid move" };
 
         Board b(*this);
         if (
-            b.at(m.from[0], m.from[1]) == Player::piece::o &&
+            b.at(m.from.row, m.from.col) == Player::piece::o &&
             rowDelta > 0
             ) throw player_exception{ player_exception::invalid_board, "o piece can't go upwards." };
         else if (
-            b.at(m.from[0], m.from[1]) == Player::piece::x &&
+            b.at(m.from.row, m.from.col) == Player::piece::x &&
             rowDelta < 0
             ) throw player_exception{ player_exception::invalid_board, "x piece can't go downwards." };
 
         if (std::abs(rowDelta) == 2)
         {
             // Controllo se la pedina in mezzo è "mangiabile"
-            switch (b.at(m.from[0], m.from[1]))
+            switch (b.at(m.from.row, m.from.col))
             {
             case Player::piece::o:
                 if (
                     b.at(
-                        m.from[0] + (rowDelta / 2),
-                        m.from[1] + (colDelta / 2)
+                        m.from.row + (rowDelta / 2),
+                        m.from.col + (colDelta / 2)
                     ) != Player::piece::x
                     ) throw player_exception{ player_exception::invalid_board, "Invalid move" };
                 break;
             case Player::piece::x:
                 if (
                     b.at(
-                        m.from[0] + (rowDelta / 2),
-                        m.from[1] + (colDelta / 2)
+                        m.from.row + (rowDelta / 2),
+                        m.from.col + (colDelta / 2)
                     ) != Player::piece::o
                     ) throw player_exception{ player_exception::invalid_board, "Invalid move" };
                 break;
             case Player::piece::O:
                 if (
                     b.at(
-                        m.from[0] + (rowDelta / 2),
-                        m.from[1] + (colDelta / 2)
+                        m.from.row + (rowDelta / 2),
+                        m.from.col + (colDelta / 2)
                     ) != Player::piece::x ||
                     b.at(
-                        m.from[0] + (rowDelta / 2),
-                        m.from[1] + (colDelta / 2)
+                        m.from.row + (rowDelta / 2),
+                        m.from.col + (colDelta / 2)
                     ) != Player::piece::X
                     ) throw player_exception{ player_exception::invalid_board, "Invalid move" };
                 break;
                 case Player::piece::X:
                 if (
                     b.at(
-                        m.from[0] + (rowDelta / 2),
-                        m.from[1] + (colDelta / 2)
+                        m.from.row + (rowDelta / 2),
+                        m.from.col + (colDelta / 2)
                     ) != Player::piece::o ||
                     b.at(
-                        m.from[0] + (rowDelta / 2),
-                        m.from[1] + (colDelta / 2)
+                        m.from.row + (rowDelta / 2),
+                        m.from.col + (colDelta / 2)
                     ) != Player::piece::O
                     ) throw player_exception{ player_exception::invalid_board, "Invalid move" };
                 break;
             }
             b.at(
-                m.from[0] + (rowDelta / 2),
-                m.from[1] + (colDelta / 2)
+                m.from.row + (rowDelta / 2),
+                m.from.col + (colDelta / 2)
             ) = Player::piece::e;
         }
 
-        b.at(m.from[0], m.from[1]) = Player::piece::e;
+        b.at(m.from.row, m.from.col) = Player::piece::e;
                               // ↓ Attenzione, è la board attuale, non quella nuova!
-        b.at(m.to[0], m.to[1]) = at(m.from[0], m.from[1]);
+        b.at(m.to.row, m.to.col) = at(m.from.row, m.from.col);
 
         // Promozione delle pedine
         if (
-            m.to[0] == 0 &&
-            at(m.from[0], m.from[1]) == Player::piece::o
-        ) b.promote(m.to[0], m.to[1]);
+            m.to.row == 0 &&
+            at(m.from.row, m.from.col) == Player::piece::o
+        ) b.promote(m.to.row, m.to.col);
         if (
-            m.to[0] == 7 &&
-            at(m.from[0], m.from[1]) == Player::piece::x
-        ) b.promote(m.to[0], m.to[1]);
+            m.to.row == 7 &&
+            at(m.from.row, m.from.col) == Player::piece::x
+        ) b.promote(m.to.row, m.to.col);
         return b;
     }
 
