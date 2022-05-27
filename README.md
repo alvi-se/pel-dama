@@ -18,3 +18,11 @@
     - Non muovere le ultime pedine
 - Difendere le proprie pedine
 - Muovere pedine in centro
+
+### Punteggio mossa
+- 100: vince
+- 10: diventa dama
+- 5: mangia pedina avversaria
+- 2: si muove in sicurezza
+
+- -5: è minacciata

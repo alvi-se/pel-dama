@@ -95,7 +95,7 @@ public:
 
     List(const List<T>& l)
     {
-        head = copy(l->head);
+        head = copy(l.head);
     }
 
     List(List<T>&& l)
@@ -228,7 +228,7 @@ public:
         return size_rec(head);
     }
 
-    List& operator=(const List& l)
+    List& operator=(const List<T>& l)
     {
         if (this != &l)
         {
@@ -238,7 +238,7 @@ public:
         return *this;
     }
 
-    List& operator=(List&& l)
+    List& operator=(List<T>&& l)
     {
         if (this != &l)
         {
@@ -248,18 +248,21 @@ public:
         return *this;
     }
 
-    List& operator+(const List& l) const
+    List& operator+(const List<T>& l) const
     {
         List<T> l1{ *this };
-        Pcell l2 = copy(l);
+        Pcell l2 = copy(l.head);
         l1.lastCell()->next = l2;
         return l1;
     }
 
-    List& operator+=(const List& l)
+    List& operator+=(const List<T>& l)
     {
-        Pcell l2 = copy(l);
-        lastCell()->next = l2;
+        Pcell l2 = copy(l.head);
+        if (head == nullptr)
+            head = l2;
+        else
+            lastCell()->next = l2;
         return *this;
     }
 
@@ -339,9 +342,8 @@ public:
     Vector()
     {
         // 10 come capacità è abbastanza, considerato
-        // che si utilizza per righe/colonne della board
-        // (quindi di dimensione 8) o per esprimere coordinate
-        // (dimensione 2)
+        // che il vettore verrà utilizzato per righe/colonne
+        //della board (quindi di dimensione 8)
         _capacity = 10;
         data = new T[_capacity];
         _size = 0;
@@ -772,8 +774,7 @@ public:
             }
             break;
         }
-        return moves;// += getPossibleJumps(pos);
-    }
+        return moves;
 
     /**
      * @brief Controlla se una pedina si può muovere nella board attuale.
@@ -1461,6 +1462,19 @@ struct Player::Impl
 {
     int player_nr;
     List<Board> history;
+
+    Move best_move(List<Position>& pieces)
+    {
+        const Board& lastBoard = history.front();
+        Move best;
+        int best_points;
+        for (Position p : pieces)
+        {
+            List<Move> moves = lastBoard.getPossibleMoves(p);
+            for (Move m : moves)
+            List<Move> jumps = lastBoard.getPossibleJumps(p);
+        }
+    }
 };
 
 Player::Player(int player_nr)
@@ -1488,7 +1502,6 @@ Player::~Player()
 
 Player& Player::operator=(const Player& p)
 {
-    // TODO anche questo va sistemato pari passo con il pimpl e il copy constructor
     if (this != &p)
     {
         pimpl->player_nr = p.pimpl->player_nr;
@@ -1535,7 +1548,17 @@ void Player::init_board(const std::string& filename) const
 
 void Player::move()
 {
-
+    List<Position> movable = pimpl->history.at(0).getMovablePieces(pimpl->player_nr);
+    if (movable.isEmpty())
+    {
+        pimpl->history.push_front(pimpl->history.front());
+    }
+    else
+    {
+        Move best = pimpl->best_move(List<Position> pieces);
+        Board newone = pimpl->history.front().applyMove(best);
+        pimpl->history.push_front(newone);
+    }
 }
 
 bool Player::valid_move() const
