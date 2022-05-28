@@ -271,7 +271,17 @@ public:
         return iterator(head);
     }
 
+    const iterator begin() const
+    {
+        return iterator(head);
+    }
+
     iterator end()
+    {
+        return iterator(nullptr);
+    }
+
+    const iterator end() const
     {
         return iterator(nullptr);
     }
@@ -527,6 +537,17 @@ struct Move
 {
     Position from;
     Position to;
+
+    /**
+     * @brief Controlla se la mossa mangia un'altra pedina,
+     * limitandosi a controllare la distanza di spostamento.
+     * ATTENZIONE: dà per scontato che la mossa sia valida!
+     * @return true se la mossa mangia una pedina, false altrimenti.
+     */
+    bool jumps() const
+    {
+        return std::abs(to.row - from.col) == 2;
+    }
 };
 
 /**
@@ -774,7 +795,8 @@ public:
             }
             break;
         }
-        return moves;
+        return moves += getPossibleJumps(pos);
+    }
 
     /**
      * @brief Controlla se una pedina si può muovere nella board attuale.
@@ -1214,64 +1236,63 @@ public:
 
     /**
      * @brief Controlla se la pedina è minacciata da un'altra avversaria.
-     * @param row La riga della pedina.
-     * @param col La colonna della pedina.
+     * @param pos La posizione della pedina.
      * @return True se è minacciata, false altriment 
      */
-    bool isThreatened(int row, int col) const
+    bool isThreatened(Position pos) const
     {
         // Una pedina ai bordi non può mai essere minacciata!
         if (
-            row <= 0 ||
-            row >= 7 ||
-            col <= 0 ||
-            col >= 7
+            pos.row <= 0 ||
+            pos.row >= 7 ||
+            pos.col <= 0 ||
+            pos.col >= 7
             ) return false;
 
-        switch (at(row, col))
+        switch (at(pos))
         {
         case Player::piece::o:
             if (
-                (at(row - 1, col - 1) == Player::piece::x ||
-                    at(row - 1, col - 1) == Player::piece::X) &&
-                at(row + 1, col + 1) == Player::piece::e
+                (at(pos.row - 1, pos.col - 1) == Player::piece::x ||
+                    at(pos.row - 1, pos.col - 1) == Player::piece::X) &&
+                at(pos.row + 1, pos.col + 1) == Player::piece::e
                 ) return true;
             if (
-                (at(row - 1, col + 1) == Player::piece::x ||
-                    at(row - 1, col + 1) == Player::piece::X) &&
-                at(row + 1, col - 1) == Player::piece::e
+                (at(pos.row - 1, pos.col + 1) == Player::piece::x ||
+                    at(pos.row - 1, pos.col + 1) == Player::piece::X) &&
+                at(pos.row + 1, pos.col - 1) == Player::piece::e
                 ) return true;
             break;
         case Player::piece::x:
             if (
-                (at(row + 1, col - 1) == Player::piece::o ||
-                    at(row + 1, col - 1) == Player::piece::O) &&
-                at(row - 1, col + 1) == Player::piece::e
+                (at(pos.row + 1, pos.col - 1) == Player::piece::o ||
+                    at(pos.row + 1, pos.col - 1) == Player::piece::O) &&
+                at(pos.row - 1, pos.col + 1) == Player::piece::e
                 ) return true;
             if (
-                (at(row + 1, col + 1) == Player::piece::o ||
-                    at(row + 1, col + 1) == Player::piece::O) &&
-                at(row - 1, col - 1) == Player::piece::e
+                (at(pos.row + 1, pos.col + 1) == Player::piece::o ||
+                    at(pos.row + 1, pos.col + 1) == Player::piece::O) &&
+                at(pos.row - 1, pos.col - 1) == Player::piece::e
                 ) return true;
             break;
         case Player::piece::O:
             if (
-                at(row - 1, col - 1) == Player::piece::X &&
-                at(row + 1, col + 1) == Player::piece::e
+                at(pos.row - 1, pos.col - 1) == Player::piece::X &&
+                at(pos.row + 1, pos.col + 1) == Player::piece::e
                 ) return true;
             if (
-                at(row - 1, col + 1) == Player::piece::X &&
-                at(row + 1, col - 1) == Player::piece::e
+                at(pos.row - 1, pos.col + 1) == Player::piece::X &&
+                at(pos.row + 1, pos.col - 1) == Player::piece::e
                 ) return true;
             break;
         case Player::piece::X:
             if (
-                at(row + 1, col - 1) == Player::piece::O &&
-                at(row - 1, col + 1) == Player::piece::e
+                at(pos.row + 1, pos.col - 1) == Player::piece::O &&
+                at(pos.row - 1, pos.col + 1) == Player::piece::e
                 ) return true;
             if (
-                at(row + 1, col + 1) == Player::piece::O &&
-                at(row - 1, col - 1) == Player::piece::e
+                at(pos.row + 1, pos.col + 1) == Player::piece::O &&
+                at(pos.row - 1, pos.col - 1) == Player::piece::e
                 ) return true;
             break;
         }
@@ -1461,19 +1482,62 @@ private:
 struct Player::Impl
 {
     int player_nr;
+    piece playerPiece;
+    piece playerDama;
     List<Board> history;
 
-    Move best_move(List<Position>& pieces)
+    /**
+     * @brief Data una lista di posizioni di pedine,
+     * valuta la mossa migliore che si può fare.
+     * Almeno un pezzo deve essere movibile.
+     * 
+     * @param pieces Le posizioni delle pedine.
+     * @return La mossa migliore.
+     */
+    Move bestMove(const List<Position>& pieces) const
     {
         const Board& lastBoard = history.front();
         Move best;
         int best_points;
-        for (Position p : pieces)
+        List<Move> moves;
+        for (const Position p : pieces)
         {
-            List<Move> moves = lastBoard.getPossibleMoves(p);
-            for (Move m : moves)
-            List<Move> jumps = lastBoard.getPossibleJumps(p);
+            moves += lastBoard.getPossibleMoves(p);
         }
+
+        if (!moves.isEmpty())
+        {
+            best_points = evaluateMove(moves.front(), lastBoard);
+            moves.pop_front();
+            for (const Move m : moves)
+            {
+
+            }
+        }
+
+        return best;
+    }
+
+    int evaluateMove(const Move& m, const Board& b) const
+    {
+        int points = 0;
+        Board applied = b.applyMove(m);
+        // La pedina mangia una pedina avversaria?
+        if (m.jumps())
+            points += 5;
+        // La pedina è minacciata una volta mossa?
+        if (applied.isThreatened(m.to))
+        {
+            points -= 5;
+        }
+        // Viene promossa?
+        if (b.at(m.from) == playerPiece &&
+            applied.at(m.to) == playerDama
+            ) points += 10;
+        // Vince la partita?
+        if (applied.getMovablePieces(get_opponent(player_nr)).isEmpty())
+            points += 100;
+        return points;
     }
 };
 
@@ -1555,7 +1619,7 @@ void Player::move()
     }
     else
     {
-        Move best = pimpl->best_move(List<Position> pieces);
+        Move best = pimpl->bestMove(movable);
         Board newone = pimpl->history.front().applyMove(best);
         pimpl->history.push_front(newone);
     }

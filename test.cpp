@@ -7,9 +7,6 @@ using std::endl;
 
 int main()
 {
-    ;
-    
-
     ifstream file{ "board.txt" };
     Board b{ file };
     file.close();
