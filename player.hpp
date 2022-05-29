@@ -2,7 +2,9 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <sstream>
 #include <stdlib.h>
+#include <cassert>
 
 struct player_exception{
 	enum err_type {index_out_of_bounds,missing_file,invalid_board};

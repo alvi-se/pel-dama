@@ -7,16 +7,30 @@ using std::endl;
 
 int main()
 {
-    ifstream file{ "board.txt" };
-    Board b{ file };
-    file.close();
-    Position p{ 5, 6 };
-    List<Move> moves = b.getPossibleMoves(p);
-    for (Move m : moves)
+    Player p1(1);
+    Player p2(2);
+
+    p1.init_board("board_0.txt");
+
+    for (int i = 0; i < 100; ++i)
     {
-        m.from.print(cout);
-        cout << " -> ";
-        m.to.print(cout);
-        cout << endl;
+        if (i % 2 == 0)
+        {
+            p1.load_board("board_" + std::to_string(i) + ".txt");
+            p1.move();
+            p1.store_board("board_" + std::to_string(i + 1) + ".txt");
+        }
+        else
+        {
+            p2.load_board("board_" + std::to_string(i) + ".txt");
+            p2.move();
+            p2.store_board("board_" + std::to_string(i + 1) + ".txt");
+        }
     }
+
+   /*
+   Player p2(2);
+   p2.load_board("board_1.txt");
+   p2.move();
+   */
 }

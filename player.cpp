@@ -204,7 +204,7 @@ public:
 
     bool isEmpty() const
     {
-        return head != nullptr;
+        return head == nullptr;
     }
 
     void remove(int pos)
@@ -262,7 +262,11 @@ public:
         if (head == nullptr)
             head = l2;
         else
-            lastCell()->next = l2;
+        {
+            Pcell last = lastCell();
+            last->next = l2;
+
+        }
         return *this;
     }
 
@@ -289,7 +293,7 @@ public:
 private:
     Pcell head;
 
-    Pcell& lastCell()
+    Pcell lastCell()
     {
         Pcell pc = head;
         while (pc != nullptr && pc->next != nullptr)
@@ -546,7 +550,7 @@ struct Move
      */
     bool jumps() const
     {
-        return std::abs(to.row - from.col) == 2;
+        return std::abs(to.row - from.row) == 2;
     }
 };
 
@@ -795,7 +799,8 @@ public:
             }
             break;
         }
-        return moves += getPossibleJumps(pos);
+        moves += getPossibleJumps(pos);
+        return moves;
     }
 
     /**
@@ -1359,7 +1364,7 @@ public:
         if (
             // Il movimento deve essere in diagonale
             std::abs(rowDelta) != std::abs(colDelta) ||
-            // Deve muoversi almeno di una celle
+            // Deve muoversi almeno di una cella
             rowDelta < -2 ||
             // Non può muoversi più di due celle
             rowDelta > 2 ||
@@ -1405,7 +1410,7 @@ public:
                     b.at(
                         m.from.row + (rowDelta / 2),
                         m.from.col + (colDelta / 2)
-                    ) != Player::piece::x ||
+                    ) != Player::piece::x &&
                     b.at(
                         m.from.row + (rowDelta / 2),
                         m.from.col + (colDelta / 2)
@@ -1417,7 +1422,7 @@ public:
                     b.at(
                         m.from.row + (rowDelta / 2),
                         m.from.col + (colDelta / 2)
-                    ) != Player::piece::o ||
+                    ) != Player::piece::o &&
                     b.at(
                         m.from.row + (rowDelta / 2),
                         m.from.col + (colDelta / 2)
@@ -1425,6 +1430,7 @@ public:
                     ) throw player_exception{ player_exception::invalid_board, "Invalid move" };
                 break;
             }
+            b.at(m.from) = Player::piece::e;
             b.at(
                 m.from.row + (rowDelta / 2),
                 m.from.col + (colDelta / 2)
@@ -1507,11 +1513,17 @@ struct Player::Impl
 
         if (!moves.isEmpty())
         {
+            best = moves.front();
             best_points = evaluateMove(moves.front(), lastBoard);
             moves.pop_front();
             for (const Move m : moves)
             {
-
+                int val = evaluateMove(m, lastBoard);
+                if (val > best_points)
+                {
+                    best = m;
+                    best_points = val;
+                }
             }
         }
 
@@ -1549,11 +1561,20 @@ Player::Player(int player_nr)
             "Player number not valid. Must be 1 or 2" };
     pimpl = new Impl;
     pimpl->player_nr = player_nr;
+    if (player_nr == 1)
+    {
+        pimpl->playerPiece = piece::x;
+        pimpl->playerDama = piece::X;
+    }
+    else
+    {
+        pimpl->playerPiece = piece::o;
+        pimpl->playerDama = piece::O;
+    }
 }
 
 Player::Player(const Player& p)
 {
-    // TODO ad ogni modifica del pimpl va sistemato il copy constructor
     pimpl = new Impl;
     pimpl->player_nr = p.pimpl->player_nr;
     pimpl->history = p.pimpl->history;
@@ -1612,7 +1633,7 @@ void Player::init_board(const std::string& filename) const
 
 void Player::move()
 {
-    List<Position> movable = pimpl->history.at(0).getMovablePieces(pimpl->player_nr);
+    List<Position> movable = pimpl->history.front().getMovablePieces(pimpl->player_nr);
     if (movable.isEmpty())
     {
         pimpl->history.push_front(pimpl->history.front());
