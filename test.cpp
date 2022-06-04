@@ -12,7 +12,7 @@ int main()
 
     p1.init_board("board_0.txt");
 
-    for (int i = 0; i < 100; ++i)
+    for (int i = 0; i < 10; ++i)
     {
         if (i % 2 == 0)
         {

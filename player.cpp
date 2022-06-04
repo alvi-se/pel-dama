@@ -555,18 +555,6 @@ struct Move
 };
 
 /**
- * @brief Specifica la direzione in cui si deve muovere la pedina.
- * Si poteva fare anche con un int, ma con un enum è più chiaro.
- */
-enum MoveDirection
-{
-    U_L,
-    U_R,
-    D_L,
-    D_R
-};
-
-/**
  * @brief Rappresenta una scacchiera.
  * È formata da una matrice 8 x 8 di player::piece.
  * Per comodità, la matrice viene salvata in ordine
@@ -1533,6 +1521,17 @@ struct Player::Impl
     int evaluateMove(const Move& m, const Board& b) const
     {
         int points = 0;
+        // Priorità per pedine centrali
+        if (m.from.col >= 2 && m.from.col <= 5)
+            ++points;
+        if (m.to.col >= 2 && m.to.col <= 5)
+            ++points;
+        // Evitare di muovere le ultime pedine
+        // per impedine dama avversaria
+        if (playerPiece == piece::x && m.from.row == 0)
+            points -= 2;
+        if (playerPiece == piece::o && m.from.row == 7)
+            points -= 2;
         Board applied = b.applyMove(m);
         // La pedina mangia una pedina avversaria?
         if (m.jumps())
@@ -1540,7 +1539,7 @@ struct Player::Impl
         // La pedina è minacciata una volta mossa?
         if (applied.isThreatened(m.to))
         {
-            points -= 5;
+            points -= 7;
         }
         // Viene promossa?
         if (b.at(m.from) == playerPiece &&
