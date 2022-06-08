@@ -1536,8 +1536,11 @@ struct Player::Impl
         // La pedina mangia una pedina avversaria?
         if (m.jumps())
             points += 5;
+        // La pedina si difende?
+        if (b.isThreatened(m.from) && !applied.isThreatened(m.to))
+            points += 5;
         // La pedina è minacciata una volta mossa?
-        if (applied.isThreatened(m.to))
+        else if (applied.isThreatened(m.to))
         {
             points -= 7;
         }
