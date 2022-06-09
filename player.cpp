@@ -1303,7 +1303,37 @@ public:
      */
     Move getMove(const Board& b) const
     {
-        // TODO
+        bool found = false;
+        Move m;
+        for (int i = 0; i < 8; ++i)
+        {
+            for (int j = 0; j < 8; ++j)
+            {
+                Position pos{ i, j };
+                if (at(pos) != b.at(pos))
+                {
+                    // La cella è cambiata, analizziamo il cambiamento
+                    // Vuota --> Pedina
+                    if (b.at(pos) == Player::piece::e)
+                    {
+                         // TODO
+                    }
+                    // Pedina --> Vuota
+                    else if (at(pos) == Player::piece::e)
+                    {
+                        // TODO
+                    }
+                    // Pedina --> Pedina, non valida
+                    else
+                    {
+                        throw player_exception{ player_exception::invalid_board, "Mossa non valida." };
+                    }
+                }
+            }
+            
+        }
+        if (!found)
+            throw player_exception{ player_exception::invalid_board, "Nessuna mossa trovata." };
     }
 
     List<Position> getMovablePieces(int player_nr)
