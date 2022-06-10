@@ -28,9 +28,9 @@ int main()
         }
     }
 
-   /*
-   Player p2(2);
-   p2.load_board("board_1.txt");
-   p2.move();
-   */
+    /*
+    Player p2(2);
+    p2.load_board("board_1.txt");
+    p2.move();
+    */
 }

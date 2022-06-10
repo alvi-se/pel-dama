@@ -32,6 +32,16 @@ struct Position
     {
         output << '[' << row << ", " << col << ']';
     }
+
+    Position operator+(const Position& p) const
+    {
+        return Position{ row + p.row, col + p.col };
+    }
+    
+    Position operator-(const Position& p) const
+    {
+        return Position{ row - p.row, col - p.col };
+    }
 };
 
 template <typename T>
@@ -513,15 +523,32 @@ Player::piece char_to_piece(char c)
     case 'O': return Player::O;
     case 'X': return Player::X;
     default:
-        throw player_exception{ player_exception::invalid_board, "Invalid piece" };
+        throw player_exception{ player_exception::invalid_board, "Invalid piece." };
     }
+}
+
+Player::piece get_promoted(Player::piece p)
+{
+    if (p == Player::piece::o) return Player::piece::O;
+    else if (p == Player::piece::x) return Player::piece::X;
+    else throw player_exception{ player_exception::invalid_board, "Invalid piece, can't be promoted" };
+}
+
+/**
+ * @brief Lancia un'eccezione se il numero del giocatore non è valido.
+ * @param player_nr Il numero da controllare.
+ * @exception player_exception L'eccezione lanciata se il numero non è valido.
+ */
+void assert_player(int player_nr)
+{
+    if (player_nr != 1 || player_nr != 2)
+        throw player_exception{ player_exception::index_out_of_bounds, "Invalid player number." };
 }
 
 int get_opponent(int player_nr)
 {
-    if (player_nr == 1) return 2;
-    if (player_nr == 2) return 1;
-    throw player_exception{ player_exception::index_out_of_bounds, "Invalid player number" };
+    assert_player(player_nr);
+    return 3 - player_nr;
 }
 
 void assert_position(Position pos)
@@ -551,6 +578,23 @@ struct Move
     bool jumps() const
     {
         return std::abs(to.row - from.row) == 2;
+    }
+
+    /**
+     * @brief Restituisce la posizione della pedina mangiata solo se
+     * può mangiare.
+     * 
+     * @return La posizione della pedina mangiata.
+     * @exception player_exception viene lanciata se la pedina non mangia altre pedine.
+     */
+    Position jumped() const
+    {
+        if (jumps())
+            return Position{
+                from.row + (to.row - from.row) / 2,
+                from.col + (to.col - from.col) / 2
+            };
+        throw player_exception{ player_exception::index_out_of_bounds, "La mossa non mangia pedine." };
     }
 };
 
@@ -685,6 +729,70 @@ public:
     const Player::piece& at(Position pos) const
     {
         return at(pos.row, pos.col);
+    }
+    
+    /**
+     * @brief Is this a C# reference :p ? Controlla che si possa accedere alla
+     * posizione passata per parametro, se si può sostituisce la reference value
+     * con il valore trovato e restituisce true, se la posizione non è valida
+     * restituisce false. In questo caso value non verrà toccato.
+     * 
+     * @param i Riga della pedina.
+     * @param j Colonna della pedina.
+     * @param value La pedina contenuta alle coordinate i e j.
+     * @return true se la posizione è valida e si è preso il valore correttamente,
+     * false altrimenti. 
+     */
+    bool tryAt(int i, int j, Player::piece& value)
+    {
+        try
+        {
+            value = at(i, j);
+        }
+        catch(const player_exception& e)
+        {
+            return false;
+        }
+        return true;
+    }
+
+    bool tryAt(int i, int j, Player::piece& value) const
+    {
+        try
+        {
+            value = at(i, j);
+        }
+        catch(const player_exception& e)
+        {
+            return false;
+        }
+        return true;
+    }
+
+    bool tryAt(Position pos, Player::piece& value)
+    {
+        try
+        {
+            value = at(pos);
+        }
+        catch(const player_exception& e)
+        {
+            return false;
+        }
+        return true;
+    }
+
+    bool tryAt(Position pos, Player::piece& value) const
+    {
+        try
+        {
+            value = at(pos);
+        }
+        catch(const player_exception& e)
+        {
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -1305,18 +1413,43 @@ public:
     {
         bool found = false;
         Move m;
+        auto changeInMove = [&](Position pos) -> bool
+        {
+            return (
+                b.at(pos) == b.at(m.from) ||
+                at(pos) == b.at(m.to) ||
+                (m.jumps() && b.at(pos) == b.at(m.jumped()))
+                );
+        };
+
         for (int i = 0; i < 8; ++i)
         {
             for (int j = 0; j < 8; ++j)
             {
                 Position pos{ i, j };
+                Position start;
+                Player::piece piece;
                 if (at(pos) != b.at(pos))
                 {
                     // La cella è cambiata, analizziamo il cambiamento
                     // Vuota --> Pedina
                     if (b.at(pos) == Player::piece::e)
                     {
-                         // TODO
+                        switch (at(pos))
+                        {
+                        case Player::piece::x:
+                            start = { i - 1, j - 1};
+                            if (
+                                tryAt(start, piece) && piece == Player::piece::e &&
+                                b.tryAt(start, piece) && piece == at(pos)
+                                )
+                            {
+                                if (found && !changeInMove(pos))
+                                    throw player_exception{ player_exception::invalid_board, "More than one move found." };
+                                found = true;
+                                m = { start, pos };
+                            }
+                        }
                     }
                     // Pedina --> Vuota
                     else if (at(pos) == Player::piece::e)
@@ -1587,10 +1720,7 @@ struct Player::Impl
 
 Player::Player(int player_nr)
 {
-    if (player_nr < 1 || player_nr > 2)
-        throw player_exception{
-            player_exception::index_out_of_bounds,
-            "Player number not valid. Must be 1 or 2" };
+    assert_player(player_nr);
     pimpl = new Impl;
     pimpl->player_nr = player_nr;
     if (player_nr == 1)
