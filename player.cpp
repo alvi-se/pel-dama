@@ -534,6 +534,25 @@ Player::piece get_promoted(Player::piece p)
     else throw player_exception{ player_exception::invalid_board, "Invalid piece, can't be promoted" };
 }
 
+bool can_jump_piece(Player::piece jumper, Player::piece jumped)
+{
+    switch (jumper)
+    {
+        case Player::piece::x:
+            return jumped == Player::piece::o;
+        case Player::piece::o:
+            return jumped == Player::piece::x;
+        case Player::piece::X:
+            return jumped == Player::piece::o ||
+                jumped == Player::piece::O;
+        case Player::piece::O:
+            return jumped == Player::piece::x ||
+                jumped == Player::piece::X;
+        default:
+            return false;
+    }
+}
+
 /**
  * @brief Lancia un'eccezione se il numero del giocatore non è valido.
  * @param player_nr Il numero da controllare.
@@ -732,14 +751,14 @@ public:
     }
     
     /**
-     * @brief Is this a C# reference :p ? Controlla che si possa accedere alla
-     * posizione passata per parametro, se si può sostituisce la reference value
-     * con il valore trovato e restituisce true, se la posizione non è valida
-     * restituisce false. In questo caso value non verrà toccato.
+     * @brief Is this a C# reference? :p
+     * Controlla che si possa accedere alla posizione passata per parametro,
+     * se si può sostituisce la reference value con il valore trovato e restituisce true,
+     * se la posizione non è valida restituisce false. In questo caso value non verrà toccato.
      * 
      * @param i Riga della pedina.
      * @param j Colonna della pedina.
-     * @param value La pedina contenuta alle coordinate i e j.
+     * @param[out] value La pedina contenuta alle coordinate i e j.
      * @return true se la posizione è valida e si è preso il valore correttamente,
      * false altrimenti. 
      */
@@ -1412,14 +1431,31 @@ public:
     Move getMove(const Board& b) const
     {
         bool found = false;
-        Move m;
+        Move move;
         auto changeInMove = [&](Position pos) -> bool
         {
             return (
-                b.at(pos) == b.at(m.from) ||
-                at(pos) == b.at(m.to) ||
-                (m.jumps() && b.at(pos) == b.at(m.jumped()))
+                b.at(pos) == b.at(move.from) ||
+                at(pos) == b.at(move.to) ||
+                (move.jumps() && b.at(pos) == b.at(move.jumped()))
                 );
+        };
+
+        auto checkMove = [this, &b](const Move& m) -> bool
+        {
+            Player::piece p1, p2;
+            return (
+                // Siamo dentro al campo?
+                b.tryAt(m.from, p1) &&
+                tryAt(m.to, p2) &&
+                // È la stessa pedina che si muove?
+                p1 == p2 &&
+                // Si è mossa veramente?
+                b.at(m.to) == Player::piece::e &&
+                at(m.from) == Player::piece::e &&
+                // Se mangia, mangia una pedina avversaria?
+                (m.jumps() ? can_jump_piece(p1, b.at(m.jumped())) : true)
+            );
         };
 
         for (int i = 0; i < 8; ++i)
@@ -1427,43 +1463,192 @@ public:
             for (int j = 0; j < 8; ++j)
             {
                 Position pos{ i, j };
-                Position start;
-                Player::piece piece;
                 if (at(pos) != b.at(pos))
                 {
-                    // La cella è cambiata, analizziamo il cambiamento
-                    // Vuota --> Pedina
-                    if (b.at(pos) == Player::piece::e)
+                    // La cella è cambiata, analizziamo il cambiamento.
+                    // Se ho già trovato una mossa, allora tutte le pedine
+                    // al di fuori della mossa devono restare ferme.
+                    if (found)
                     {
-                        switch (at(pos))
+                        if (!changeInMove(pos))
+                        throw player_exception{ player_exception::invalid_board, "More than one move found." };
+                    }
+                    else
+                    {
+                        List<Move> possible;
+                        // Vuota --> Pedina
+                        if (b.at(pos) == Player::piece::e)
                         {
-                        case Player::piece::x:
-                            start = { i - 1, j - 1};
-                            if (
-                                tryAt(start, piece) && piece == Player::piece::e &&
-                                b.tryAt(start, piece) && piece == at(pos)
-                                )
+                            switch (at(pos))
                             {
-                                if (found && !changeInMove(pos))
-                                    throw player_exception{ player_exception::invalid_board, "More than one move found." };
+                            case Player::piece::x:
+                                possible.push_back(Move{
+                                    Position{ pos.row - 1, pos.col - 1 },
+                                    pos
+                                });
+                                possible.push_back(Move{
+                                    Position{ pos.row - 1, pos.col + 1 },
+                                    pos
+                                });
+                                possible.push_back(Move{
+                                    Position{ pos.row - 2, pos.col - 2 },
+                                    pos
+                                });
+                                possible.push_back(Move{
+                                    Position{ pos.row - 2, pos.col + 2},
+                                    pos
+                                });
+                                break;
+                            case Player::piece::o:
+                                possible.push_back(Move{
+                                    Position{ pos.row + 1, pos.col - 1 },
+                                    pos
+                                });
+                                possible.push_back(Move{
+                                    Position{ pos.row + 1, pos.col + 1 },
+                                    pos
+                                });
+                                possible.push_back(Move{
+                                    Position{ pos.row + 2, pos.col - 2 },
+                                    pos
+                                });
+                                possible.push_back(Move{
+                                    Position{ pos.row + 2, pos.col + 2},
+                                    pos
+                                });
+                                break;
+                            case Player::piece::X:
+                            case Player::piece::O:
+                                possible.push_back(Move{
+                                    Position{ pos.row - 1, pos.col - 1 },
+                                    pos
+                                });
+                                possible.push_back(Move{
+                                    Position{ pos.row - 1, pos.col + 1 },
+                                    pos
+                                });
+                                possible.push_back(Move{
+                                    Position{ pos.row - 2, pos.col - 2 },
+                                    pos
+                                });
+                                possible.push_back(Move{
+                                    Position{ pos.row - 2, pos.col + 2},
+                                    pos
+                                });
+                                possible.push_back(Move{
+                                    Position{ pos.row + 1, pos.col - 1 },
+                                    pos
+                                });
+                                possible.push_back(Move{
+                                    Position{ pos.row + 1, pos.col + 1 },
+                                    pos
+                                });
+                                possible.push_back(Move{
+                                    Position{ pos.row + 2, pos.col - 2 },
+                                    pos
+                                });
+                                possible.push_back(Move{
+                                    Position{ pos.row + 2, pos.col + 2},
+                                    pos
+                                });
+                                break;
+                            }
+                        }
+                        // Pedina --> Vuota
+                        else if (at(pos) == Player::piece::e)
+                        {
+                            switch (at(pos))
+                            {
+                            case Player::piece::x:
+                                possible.push_back(Move{
+                                    pos,
+                                    Position{ pos.row + 1, pos.col - 1 }
+                                });
+                                possible.push_back(Move{
+                                    pos,
+                                    Position{ pos.row + 1, pos.col + 1 }
+                                });
+                                possible.push_back(Move{
+                                    pos,
+                                    Position{ pos.row + 2, pos.col - 2 }
+                                });
+                                possible.push_back(Move{
+                                    pos,
+                                    Position{ pos.row + 2, pos.col + 2}
+                                });
+                                break;
+                            case Player::piece::o:
+                                possible.push_back(Move{
+                                    pos,
+                                    Position{ pos.row - 1, pos.col - 1 }
+                                });
+                                possible.push_back(Move{
+                                    pos,
+                                    Position{ pos.row - 1, pos.col + 1 }
+                                });
+                                possible.push_back(Move{
+                                    pos,
+                                    Position{ pos.row - 2, pos.col - 2 }
+                                });
+                                possible.push_back(Move{
+                                    pos,
+                                    Position{ pos.row - 2, pos.col + 2}
+                                });
+                                break;
+                            case Player::piece::X:
+                            case Player::piece::O:
+                                possible.push_back(Move{
+                                    pos,
+                                    Position{ pos.row - 1, pos.col - 1 }
+                                });
+                                possible.push_back(Move{
+                                    pos,
+                                    Position{ pos.row - 1, pos.col + 1 }
+                                });
+                                possible.push_back(Move{
+                                    pos,
+                                    Position{ pos.row - 2, pos.col - 2 }
+                                });
+                                possible.push_back(Move{
+                                    pos,
+                                    Position{ pos.row - 2, pos.col + 2}
+                                });
+                                possible.push_back(Move{
+                                    pos,
+                                    Position{ pos.row + 1, pos.col - 1 }
+                                });
+                                possible.push_back(Move{
+                                    pos,
+                                    Position{ pos.row + 1, pos.col + 1 }
+                                });
+                                possible.push_back(Move{
+                                    pos,
+                                    Position{ pos.row + 2, pos.col - 2 }
+                                });
+                                possible.push_back(Move{
+                                    Position{ pos.row + 2, pos.col + 2}
+                                });
+                                break;
+                            }
+                        }
+                        // Pedina --> Pedina, non valida
+                        else
+                        {
+                            throw player_exception{ player_exception::invalid_board, "Mossa non valida." };
+                        }
+                        for (const Move m : possible)
+                        {
+                            if (checkMove(m))
+                            {
+                                if (found)
+                                    throw player_exception{player_exception::invalid_board, "Più di una mossa trovata." };
                                 found = true;
-                                m = { start, pos };
+                                move = m;
                             }
                         }
                     }
-                    // Pedina --> Vuota
-                    else if (at(pos) == Player::piece::e)
-                    {
-                        // TODO
-                    }
-                    // Pedina --> Pedina, non valida
-                    else
-                    {
-                        throw player_exception{ player_exception::invalid_board, "Mossa non valida." };
-                    }
                 }
             }
-            
         }
         if (!found)
             throw player_exception{ player_exception::invalid_board, "Nessuna mossa trovata." };

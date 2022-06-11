@@ -7,6 +7,11 @@ using std::endl;
 
 int main()
 {
+    Player p(1);
+    p.load_board("board_1.txt");
+    p.load_board("board_2.txt");
+    cout << p.valid_move() << endl;
+    /*
     Player p1(1);
     Player p2(2);
 
@@ -27,7 +32,7 @@ int main()
             p2.store_board("board_" + std::to_string(i + 1) + ".txt");
         }
     }
-
+    */
     /*
     Player p2(2);
     p2.load_board("board_1.txt");
