@@ -28,6 +28,7 @@ struct Position
     int row;
     int col;
 
+
     void print(ostream& output)
     {
         output << '[' << row << ", " << col << ']';
@@ -41,6 +42,11 @@ struct Position
     Position operator-(const Position& p) const
     {
         return Position{ row - p.row, col - p.col };
+    }
+
+    bool operator==(const Position& p) const
+    {
+        return row == p.row && col == p.col;
     }
 };
 
@@ -588,6 +594,12 @@ struct Move
     Position from;
     Position to;
 
+    bool empty() const
+    {
+        Position empty{ -1, -1 };
+        return from == empty && to == empty;
+    }
+
     /**
      * @brief Controlla se la mossa mangia un'altra pedina,
      * limitandosi a controllare la distanza di spostamento.
@@ -623,6 +635,11 @@ struct Move
         to.print(output);
     }
 };
+
+Move emptyMove()
+{
+    return Move{ Position{ -1, -1 }, Position{ -1, -1 } };
+}
 
 /**
  * @brief Rappresenta una scacchiera.
@@ -1305,6 +1322,11 @@ public:
         return false;
     }
 
+    bool canJump(Position pos) const
+    {
+        return canJump(pos.row, pos.col);
+    }
+
     /**
      * @brief Controlla se la pedina può essere promossa a dama.
      *
@@ -1359,6 +1381,11 @@ public:
             break;
         }
         return false;
+    }
+
+    bool canBePromoted(Position pos) const
+    {
+        return canBePromoted(pos.row, pos.col);
     }
 
     /**
@@ -1713,9 +1740,9 @@ public:
             // Non può muoversi più di due celle
             rowDelta > 2 ||
             // Non si può muovere una cella vuota
-            at(m.from.row, m.from.col) == Player::piece::e ||
+            at(m.from) == Player::piece::e ||
             // Non si può arrivare su una cella non vuota
-            at(m.to.row, m.to.col) != Player::piece::e
+            at(m.to) != Player::piece::e
             ) throw player_exception{ player_exception::invalid_board, "Invalid move" };
 
         Board b(*this);
@@ -1735,65 +1762,37 @@ public:
             {
             case Player::piece::o:
                 if (
-                    b.at(
-                        m.from.row + (rowDelta / 2),
-                        m.from.col + (colDelta / 2)
-                    ) != Player::piece::x
+                    b.at(m.jumped()) != Player::piece::x
                     ) throw player_exception{ player_exception::invalid_board, "Invalid move" };
                 break;
             case Player::piece::x:
                 if (
-                    b.at(
-                        m.from.row + (rowDelta / 2),
-                        m.from.col + (colDelta / 2)
-                    ) != Player::piece::o
+                    b.at(m.jumped()) != Player::piece::o
                     ) throw player_exception{ player_exception::invalid_board, "Invalid move" };
                 break;
             case Player::piece::O:
                 if (
-                    b.at(
-                        m.from.row + (rowDelta / 2),
-                        m.from.col + (colDelta / 2)
-                    ) != Player::piece::x &&
-                    b.at(
-                        m.from.row + (rowDelta / 2),
-                        m.from.col + (colDelta / 2)
-                    ) != Player::piece::X
+                    b.at(m.jumped()) != Player::piece::x &&
+                    b.at(m.jumped()) != Player::piece::X
                     ) throw player_exception{ player_exception::invalid_board, "Invalid move" };
                 break;
             case Player::piece::X:
                 if (
-                    b.at(
-                        m.from.row + (rowDelta / 2),
-                        m.from.col + (colDelta / 2)
-                    ) != Player::piece::o &&
-                    b.at(
-                        m.from.row + (rowDelta / 2),
-                        m.from.col + (colDelta / 2)
-                    ) != Player::piece::O
+                    b.at(m.jumped()) != Player::piece::o &&
+                    b.at(m.jumped()) != Player::piece::O
                     ) throw player_exception{ player_exception::invalid_board, "Invalid move" };
                 break;
             }
             b.at(m.from) = Player::piece::e;
-            b.at(
-                m.from.row + (rowDelta / 2),
-                m.from.col + (colDelta / 2)
-            ) = Player::piece::e;
+            b.at(m.jumped()) = Player::piece::e;
         }
 
-        b.at(m.from.row, m.from.col) = Player::piece::e;
+        b.at(m.from) = Player::piece::e;
         // ↓ Attenzione, è la board attuale, non quella nuova!
-        b.at(m.to.row, m.to.col) = at(m.from.row, m.from.col);
+        b.at(m.to) = at(m.from);
 
         // Promozione delle pedine
-        if (
-            m.to.row == 0 &&
-            at(m.from.row, m.from.col) == Player::piece::o
-            ) b.promote(m.to.row, m.to.col);
-        if (
-            m.to.row == 7 &&
-            at(m.from.row, m.from.col) == Player::piece::x
-            ) b.promote(m.to.row, m.to.col);
+        if (canBePromoted(m.to)) b.promote(m.to.row, m.to.col);
         return b;
     }
 

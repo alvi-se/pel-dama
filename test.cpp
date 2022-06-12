@@ -9,10 +9,10 @@ int main()
 {
     Board b1, b2;
     ifstream input;
-    input.open("board_34.txt");
+    input.open("board_21.txt");
     b1 = Board{input};
     input.close();
-    input.open("board_35.txt");
+    input.open("board_22.txt");
     b2 = Board{input};
     input.close();
     Move m = b2.extractMove(b1);
