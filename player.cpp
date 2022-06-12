@@ -560,7 +560,7 @@ bool can_jump_piece(Player::piece jumper, Player::piece jumped)
  */
 void assert_player(int player_nr)
 {
-    if (player_nr != 1 || player_nr != 2)
+    if (player_nr != 1 && player_nr != 2)
         throw player_exception{ player_exception::index_out_of_bounds, "Invalid player number." };
 }
 
@@ -614,6 +614,13 @@ struct Move
                 from.col + (to.col - from.col) / 2
             };
         throw player_exception{ player_exception::index_out_of_bounds, "La mossa non mangia pedine." };
+    }
+
+    void print(ostream& output)
+    {
+        from.print(output);
+        output << " -> ";
+        to.print(output);
     }
 };
 
@@ -1428,7 +1435,7 @@ public:
      * @return La mossa estratta.
      * @exception player_exception Viene lanciata se la mossa non è valida.
      */
-    Move getMove(const Board& b) const
+    Move extractMove(const Board& b) const
     {
         bool found = false;
         Move move;
@@ -1652,6 +1659,7 @@ public:
         }
         if (!found)
             throw player_exception{ player_exception::invalid_board, "Nessuna mossa trovata." };
+        return move;
     }
 
     List<Position> getMovablePieces(int player_nr)
@@ -1997,9 +2005,9 @@ bool Player::valid_move() const
 {
     try
     {
-        Move m = pimpl->history.at(0).getMove(pimpl->history.at(1));
+        Move m = pimpl->history.at(0).extractMove(pimpl->history.at(1));
     }
-    catch (const player_exception e)
+    catch (const player_exception& e)
     {
         return false;
     }

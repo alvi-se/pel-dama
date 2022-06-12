@@ -7,10 +7,18 @@ using std::endl;
 
 int main()
 {
-    Player p(1);
-    p.load_board("board_1.txt");
-    p.load_board("board_2.txt");
-    cout << p.valid_move() << endl;
+    Board b1, b2;
+    ifstream input;
+    input.open("board_34.txt");
+    b1 = Board{input};
+    input.close();
+    input.open("board_35.txt");
+    b2 = Board{input};
+    input.close();
+    Move m = b2.extractMove(b1);
+    m.print(cout);
+    cout << endl;
+
     /*
     Player p1(1);
     Player p2(2);
