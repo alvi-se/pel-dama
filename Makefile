@@ -1,3 +1,9 @@
+888851.tar.gz: player.cpp
+	mkdir 888851
+	cp player.cpp 888851
+	tar -zcvf 888851.tar.gz 888851
+	rm -r 888851
+
 build/play: build/play.o build/player.o
 	g++ build/play.o build/player.o -o build/play
 
@@ -18,3 +24,4 @@ build/player.o: player.cpp
 
 clean:
 	rm build/*
+	rm 888851.tar.gz

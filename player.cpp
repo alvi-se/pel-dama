@@ -38,7 +38,7 @@ struct Position
     {
         return Position{ row + p.row, col + p.col };
     }
-    
+
     Position operator-(const Position& p) const
     {
         return Position{ row - p.row, col - p.col };
@@ -544,18 +544,18 @@ bool can_jump_piece(Player::piece jumper, Player::piece jumped)
 {
     switch (jumper)
     {
-        case Player::piece::x:
-            return jumped == Player::piece::o;
-        case Player::piece::o:
-            return jumped == Player::piece::x;
-        case Player::piece::X:
-            return jumped == Player::piece::o ||
-                jumped == Player::piece::O;
-        case Player::piece::O:
-            return jumped == Player::piece::x ||
-                jumped == Player::piece::X;
-        default:
-            return false;
+    case Player::piece::x:
+        return jumped == Player::piece::o;
+    case Player::piece::o:
+        return jumped == Player::piece::x;
+    case Player::piece::X:
+        return jumped == Player::piece::o ||
+            jumped == Player::piece::O;
+    case Player::piece::O:
+        return jumped == Player::piece::x ||
+            jumped == Player::piece::X;
+    default:
+        return false;
     }
 }
 
@@ -614,7 +614,7 @@ struct Move
     /**
      * @brief Restituisce la posizione della pedina mangiata solo se
      * può mangiare.
-     * 
+     *
      * @return La posizione della pedina mangiata.
      * @exception player_exception viene lanciata se la pedina non mangia altre pedine.
      */
@@ -624,7 +624,7 @@ struct Move
             return Position{
                 from.row + (to.row - from.row) / 2,
                 from.col + (to.col - from.col) / 2
-            };
+        };
         throw player_exception{ player_exception::index_out_of_bounds, "La mossa non mangia pedine." };
     }
 
@@ -773,18 +773,18 @@ public:
     {
         return at(pos.row, pos.col);
     }
-    
+
     /**
      * @brief Is this a C# reference? :p
      * Controlla che si possa accedere alla posizione passata per parametro,
      * se si può sostituisce la reference value con il valore trovato e restituisce true,
      * se la posizione non è valida restituisce false. In questo caso value non verrà toccato.
-     * 
+     *
      * @param i Riga della pedina.
      * @param j Colonna della pedina.
      * @param[out] value La pedina contenuta alle coordinate i e j.
      * @return true se la posizione è valida e si è preso il valore correttamente,
-     * false altrimenti. 
+     * false altrimenti.
      */
     bool tryAt(int i, int j, Player::piece& value)
     {
@@ -792,7 +792,7 @@ public:
         {
             value = at(i, j);
         }
-        catch(const player_exception& e)
+        catch (const player_exception& e)
         {
             return false;
         }
@@ -805,7 +805,7 @@ public:
         {
             value = at(i, j);
         }
-        catch(const player_exception& e)
+        catch (const player_exception& e)
         {
             return false;
         }
@@ -818,7 +818,7 @@ public:
         {
             value = at(pos);
         }
-        catch(const player_exception& e)
+        catch (const player_exception& e)
         {
             return false;
         }
@@ -831,7 +831,7 @@ public:
         {
             value = at(pos);
         }
-        catch(const player_exception& e)
+        catch (const player_exception& e)
         {
             return false;
         }
@@ -1332,7 +1332,7 @@ public:
      *
      * @param row La riga della pedina.
      * @param col La colonna della pedina.
-     * @return True se può essere promossa a dama, false altriment 
+     * @return True se può essere promossa a dama, false altrimenti.
      */
     bool canBePromoted(int row, int col) const
     {
@@ -1391,66 +1391,96 @@ public:
     /**
      * @brief Controlla se la pedina è minacciata da un'altra avversaria.
      * @param pos La posizione della pedina.
-     * @return True se è minacciata, false altriment 
+     * @return True se è minacciata, false altriment
      */
     bool isThreatened(Position pos) const
     {
+        return !getThreats(pos).isEmpty();
+    }
+
+    /**
+     * @brief Crea una lista con tutte le pedine che minacciano
+     * quella alla posizione specificata.
+     * 
+     * @param pos La posizione della pedina da controllare.
+     * @return Le pedine che minacciano quella specificata.
+     */
+    List<Position> getThreats(Position pos) const
+    {
+        List<Position> threats;
         // Una pedina ai bordi non può mai essere minacciata!
         if (
-            pos.row <= 0 ||
-            pos.row >= 7 ||
-            pos.col <= 0 ||
-            pos.col >= 7
-            ) return false;
-
-        switch (at(pos))
+            pos.row > 0 &&
+            pos.row < 7 &&
+            pos.col > 0 &&
+            pos.col < 7
+            )
         {
-        case Player::piece::o:
-            if (
-                (at(pos.row - 1, pos.col - 1) == Player::piece::x ||
-                    at(pos.row - 1, pos.col - 1) == Player::piece::X) &&
-                at(pos.row + 1, pos.col + 1) == Player::piece::e
-                ) return true;
-            if (
-                (at(pos.row - 1, pos.col + 1) == Player::piece::x ||
-                    at(pos.row - 1, pos.col + 1) == Player::piece::X) &&
-                at(pos.row + 1, pos.col - 1) == Player::piece::e
-                ) return true;
-            break;
-        case Player::piece::x:
-            if (
-                (at(pos.row + 1, pos.col - 1) == Player::piece::o ||
-                    at(pos.row + 1, pos.col - 1) == Player::piece::O) &&
-                at(pos.row - 1, pos.col + 1) == Player::piece::e
-                ) return true;
-            if (
-                (at(pos.row + 1, pos.col + 1) == Player::piece::o ||
-                    at(pos.row + 1, pos.col + 1) == Player::piece::O) &&
-                at(pos.row - 1, pos.col - 1) == Player::piece::e
-                ) return true;
-            break;
-        case Player::piece::O:
-            if (
-                at(pos.row - 1, pos.col - 1) == Player::piece::X &&
-                at(pos.row + 1, pos.col + 1) == Player::piece::e
-                ) return true;
-            if (
-                at(pos.row - 1, pos.col + 1) == Player::piece::X &&
-                at(pos.row + 1, pos.col - 1) == Player::piece::e
-                ) return true;
-            break;
-        case Player::piece::X:
-            if (
-                at(pos.row + 1, pos.col - 1) == Player::piece::O &&
-                at(pos.row - 1, pos.col + 1) == Player::piece::e
-                ) return true;
-            if (
-                at(pos.row + 1, pos.col + 1) == Player::piece::O &&
-                at(pos.row - 1, pos.col - 1) == Player::piece::e
-                ) return true;
-            break;
+            switch (at(pos))
+            {
+            case Player::piece::o:
+                if (
+                    (at(pos.row - 1, pos.col - 1) == Player::piece::x ||
+                        at(pos.row - 1, pos.col - 1) == Player::piece::X) &&
+                    at(pos.row + 1, pos.col + 1) == Player::piece::e
+                    ) threats.push_back(Position{ pos.row - 1, pos.col - 1 });
+                if (
+                    (at(pos.row - 1, pos.col + 1) == Player::piece::x ||
+                        at(pos.row - 1, pos.col + 1) == Player::piece::X) &&
+                    at(pos.row + 1, pos.col - 1) == Player::piece::e
+                    ) threats.push_back(Position{ pos.row - 1, pos.col + 1 });
+                break;
+            case Player::piece::x:
+                if (
+                    (at(pos.row + 1, pos.col - 1) == Player::piece::o ||
+                        at(pos.row + 1, pos.col - 1) == Player::piece::O) &&
+                    at(pos.row - 1, pos.col + 1) == Player::piece::e
+                    ) threats.push_back(Position{ pos.row + 1, pos.col - 1 });
+                if (
+                    (at(pos.row + 1, pos.col + 1) == Player::piece::o ||
+                        at(pos.row + 1, pos.col + 1) == Player::piece::O) &&
+                    at(pos.row - 1, pos.col - 1) == Player::piece::e
+                    ) threats.push_back(Position{ pos.row + 1, pos.col + 1 });
+                break;
+            case Player::piece::O:
+                if (
+                    at(pos.row - 1, pos.col - 1) == Player::piece::X &&
+                    at(pos.row + 1, pos.col + 1) == Player::piece::e
+                    ) threats.push_back(Position{ pos.row - 1, pos.col - 1 });
+                if (
+                    at(pos.row - 1, pos.col + 1) == Player::piece::X &&
+                    at(pos.row + 1, pos.col - 1) == Player::piece::e
+                    ) threats.push_back(Position{ pos.row - 1, pos.col + 1 });
+                if (
+                    at(pos.row + 1, pos.col - 1) == Player::piece::X &&
+                    at(pos.row - 1, pos.col + 1) == Player::piece::e
+                    ) threats.push_back(Position{ pos.row + 1, pos.col - 1 });
+                if (
+                    at(pos.row + 1, pos.col + 1) == Player::piece::X &&
+                    at(pos.row - 1, pos.col - 1) == Player::piece::e
+                    ) threats.push_back(Position{ pos.row + 1, pos.col + 1 });
+                break;break;
+            case Player::piece::X:
+                if (
+                    at(pos.row - 1, pos.col - 1) == Player::piece::O &&
+                    at(pos.row + 1, pos.col + 1) == Player::piece::e
+                    ) threats.push_back(Position{ pos.row - 1, pos.col - 1 });
+                if (
+                    at(pos.row - 1, pos.col + 1) == Player::piece::O &&
+                    at(pos.row + 1, pos.col - 1) == Player::piece::e
+                    ) threats.push_back(Position{ pos.row - 1, pos.col + 1 });
+                if (
+                    at(pos.row + 1, pos.col - 1) == Player::piece::O &&
+                    at(pos.row - 1, pos.col + 1) == Player::piece::e
+                    ) threats.push_back(Position{ pos.row + 1, pos.col - 1 });
+                if (
+                    at(pos.row + 1, pos.col + 1) == Player::piece::O &&
+                    at(pos.row - 1, pos.col - 1) == Player::piece::e
+                    ) threats.push_back(Position{ pos.row + 1, pos.col + 1 });
+                break;
+            }
         }
-        return false;
+        return threats;
     }
 
     /**
@@ -1489,7 +1519,7 @@ public:
                 at(m.from) == Player::piece::e &&
                 // Se mangia, mangia una pedina avversaria?
                 (m.jumps() ? can_jump_piece(p1, b.at(m.jumped())) : true)
-            );
+                );
         };
 
         for (int i = 0; i < 8; ++i)
@@ -1505,7 +1535,7 @@ public:
                     if (found)
                     {
                         if (!changeInMove(pos))
-                        throw player_exception{ player_exception::invalid_board, "More than one move found." };
+                            throw player_exception{ player_exception::invalid_board, "More than one move found." };
                     }
                     else
                     {
@@ -1519,72 +1549,72 @@ public:
                                 possible.push_back(Move{
                                     Position{ pos.row - 1, pos.col - 1 },
                                     pos
-                                });
+                                    });
                                 possible.push_back(Move{
                                     Position{ pos.row - 1, pos.col + 1 },
                                     pos
-                                });
+                                    });
                                 possible.push_back(Move{
                                     Position{ pos.row - 2, pos.col - 2 },
                                     pos
-                                });
+                                    });
                                 possible.push_back(Move{
                                     Position{ pos.row - 2, pos.col + 2},
                                     pos
-                                });
+                                    });
                                 break;
                             case Player::piece::o:
                                 possible.push_back(Move{
                                     Position{ pos.row + 1, pos.col - 1 },
                                     pos
-                                });
+                                    });
                                 possible.push_back(Move{
                                     Position{ pos.row + 1, pos.col + 1 },
                                     pos
-                                });
+                                    });
                                 possible.push_back(Move{
                                     Position{ pos.row + 2, pos.col - 2 },
                                     pos
-                                });
+                                    });
                                 possible.push_back(Move{
                                     Position{ pos.row + 2, pos.col + 2},
                                     pos
-                                });
+                                    });
                                 break;
                             case Player::piece::X:
                             case Player::piece::O:
                                 possible.push_back(Move{
                                     Position{ pos.row - 1, pos.col - 1 },
                                     pos
-                                });
+                                    });
                                 possible.push_back(Move{
                                     Position{ pos.row - 1, pos.col + 1 },
                                     pos
-                                });
+                                    });
                                 possible.push_back(Move{
                                     Position{ pos.row - 2, pos.col - 2 },
                                     pos
-                                });
+                                    });
                                 possible.push_back(Move{
                                     Position{ pos.row - 2, pos.col + 2},
                                     pos
-                                });
+                                    });
                                 possible.push_back(Move{
                                     Position{ pos.row + 1, pos.col - 1 },
                                     pos
-                                });
+                                    });
                                 possible.push_back(Move{
                                     Position{ pos.row + 1, pos.col + 1 },
                                     pos
-                                });
+                                    });
                                 possible.push_back(Move{
                                     Position{ pos.row + 2, pos.col - 2 },
                                     pos
-                                });
+                                    });
                                 possible.push_back(Move{
                                     Position{ pos.row + 2, pos.col + 2},
                                     pos
-                                });
+                                    });
                                 break;
                             }
                         }
@@ -1597,71 +1627,71 @@ public:
                                 possible.push_back(Move{
                                     pos,
                                     Position{ pos.row + 1, pos.col - 1 }
-                                });
+                                    });
                                 possible.push_back(Move{
                                     pos,
                                     Position{ pos.row + 1, pos.col + 1 }
-                                });
+                                    });
                                 possible.push_back(Move{
                                     pos,
                                     Position{ pos.row + 2, pos.col - 2 }
-                                });
+                                    });
                                 possible.push_back(Move{
                                     pos,
                                     Position{ pos.row + 2, pos.col + 2}
-                                });
+                                    });
                                 break;
                             case Player::piece::o:
                                 possible.push_back(Move{
                                     pos,
                                     Position{ pos.row - 1, pos.col - 1 }
-                                });
+                                    });
                                 possible.push_back(Move{
                                     pos,
                                     Position{ pos.row - 1, pos.col + 1 }
-                                });
+                                    });
                                 possible.push_back(Move{
                                     pos,
                                     Position{ pos.row - 2, pos.col - 2 }
-                                });
+                                    });
                                 possible.push_back(Move{
                                     pos,
                                     Position{ pos.row - 2, pos.col + 2}
-                                });
+                                    });
                                 break;
                             case Player::piece::X:
                             case Player::piece::O:
                                 possible.push_back(Move{
                                     pos,
                                     Position{ pos.row - 1, pos.col - 1 }
-                                });
+                                    });
                                 possible.push_back(Move{
                                     pos,
                                     Position{ pos.row - 1, pos.col + 1 }
-                                });
+                                    });
                                 possible.push_back(Move{
                                     pos,
                                     Position{ pos.row - 2, pos.col - 2 }
-                                });
+                                    });
                                 possible.push_back(Move{
                                     pos,
                                     Position{ pos.row - 2, pos.col + 2}
-                                });
+                                    });
                                 possible.push_back(Move{
                                     pos,
                                     Position{ pos.row + 1, pos.col - 1 }
-                                });
+                                    });
                                 possible.push_back(Move{
                                     pos,
                                     Position{ pos.row + 1, pos.col + 1 }
-                                });
+                                    });
                                 possible.push_back(Move{
                                     pos,
                                     Position{ pos.row + 2, pos.col - 2 }
-                                });
+                                    });
                                 possible.push_back(Move{
                                     Position{ pos.row + 2, pos.col + 2}
-                                });
+                                    });
                                 break;
                             }
                         }
@@ -1675,7 +1705,7 @@ public:
                             if (checkMove(m))
                             {
                                 if (found)
-                                    throw player_exception{player_exception::invalid_board, "Più di una mossa trovata." };
+                                    throw player_exception{ player_exception::invalid_board, "Più di una mossa trovata." };
                                 found = true;
                                 move = m;
                             }
@@ -1689,7 +1719,7 @@ public:
         return move;
     }
 
-    List<Position> getMovablePieces(int player_nr)
+    List<Position> getMovablePieces(int player_nr) const
     {
         List<Position> movable;
         if (player_nr < 1 || player_nr > 2)
@@ -1839,14 +1869,14 @@ struct Player::Impl
      * @brief Data una lista di posizioni di pedine,
      * valuta la mossa migliore che si può fare.
      * Almeno un pezzo deve essere movibile.
-     * 
+     *
      * @param pieces Le posizioni delle pedine.
      * @return La mossa migliore.
      */
     Move bestMove(const List<Position>& pieces) const
     {
         const Board& lastBoard = history.front();
-        Move best;
+        Move best = emptyMove();
         int best_points;
         List<Move> moves;
         for (const Position p : pieces)
@@ -1871,6 +1901,32 @@ struct Player::Impl
         }
 
         return best;
+    }
+
+    Move bestMove(const Board& b, int depth) const
+    {
+        List<Position> movable = b.getMovablePieces(player_nr);
+        
+    }
+
+    /**
+     * @brief 
+     * 
+     * @param b 
+     * @param p 
+     * @param depth 
+     * @param[out] move 
+     * @return Move 
+     */
+    Move bestPieceMove(const Board& b, Position p, int depth, Move& move) const
+    {
+        List<Move> moves = b.getPossibleMoves(p);
+
+        for (const Move m : moves)
+        {
+            Board applied = b.applyMove(m);
+            
+        }
     }
 
     int evaluateMove(const Move& m, const Board& b) const
