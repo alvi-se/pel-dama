@@ -1,5 +1,4 @@
 #include <iostream>
-#include <time.h>
 #include "player.cpp"
 
 using std::cout;
@@ -7,19 +6,6 @@ using std::endl;
 
 int main()
 {
-    Board b1, b2;
-    ifstream input;
-    input.open("board_21.txt");
-    b1 = Board{input};
-    input.close();
-    input.open("board_22.txt");
-    b2 = Board{input};
-    input.close();
-    Move m = b2.extractMove(b1);
-    m.print(cout);
-    cout << endl;
-
-    /*
     Player p1(1);
     Player p2(2);
 
@@ -40,7 +26,6 @@ int main()
             p2.store_board("board_" + std::to_string(i + 1) + ".txt");
         }
     }
-    */
     /*
     Player p2(2);
     p2.load_board("board_1.txt");

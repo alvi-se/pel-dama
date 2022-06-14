@@ -154,28 +154,28 @@ public:
     T& front()
     {
         if (head == nullptr)
-            throw new player_exception{ player_exception::index_out_of_bounds, "No elements in list" };
+            throw player_exception{ player_exception::index_out_of_bounds, "No elements in list" };
         return head->data;
     }
 
     T& front() const
     {
         if (head == nullptr)
-            throw new player_exception{ player_exception::index_out_of_bounds, "No elements in list" };
+            throw player_exception{ player_exception::index_out_of_bounds, "No elements in list" };
         return head->data;
     }
 
     T& back()
     {
         if (head == nullptr)
-            throw new player_exception{ player_exception::index_out_of_bounds, "No elements in list" };
+            throw player_exception{ player_exception::index_out_of_bounds, "No elements in list" };
         return lastCell()->data;
     }
 
     T& back() const
     {
         if (head == nullptr)
-            throw new player_exception{ player_exception::index_out_of_bounds, "No elements in list" };
+            throw player_exception{ player_exception::index_out_of_bounds, "No elements in list" };
         return lastCell()->data;
     }
 
@@ -228,7 +228,7 @@ public:
         if (pos == 0)
         {
             if (head == nullptr)
-                throw player_exception{ player_exception::index_out_of_bounds, "Out of stack bounds" };
+                throw player_exception{ player_exception::index_out_of_bounds, "Out of list bounds" };
             Pcell toremove = head;
             head = toremove->next;
             delete toremove;
@@ -333,7 +333,7 @@ private:
     void remove_rec(int pos, Pcell pc)
     {
         if (pc == nullptr || pc->next == nullptr)
-            throw player_exception{ player_exception::index_out_of_bounds, "Out of stack bounds" };
+            throw player_exception{ player_exception::index_out_of_bounds, "Out of list bounds" };
         if (pos > 1)
         {
             remove_rec(--pos, pc->next);
@@ -529,7 +529,7 @@ Player::piece char_to_piece(char c)
     case 'O': return Player::O;
     case 'X': return Player::X;
     default:
-        throw player_exception{ player_exception::invalid_board, "Invalid piece." };
+        throw player_exception{ player_exception::invalid_board, "Invalid piece" };
     }
 }
 
@@ -567,7 +567,7 @@ bool can_jump_piece(Player::piece jumper, Player::piece jumped)
 void assert_player(int player_nr)
 {
     if (player_nr != 1 && player_nr != 2)
-        throw player_exception{ player_exception::index_out_of_bounds, "Invalid player number." };
+        throw player_exception{ player_exception::index_out_of_bounds, "Invalid player number" };
 }
 
 int get_opponent(int player_nr)
@@ -583,7 +583,7 @@ void assert_position(Position pos)
         pos.col < 0 ||
         pos.row > 7 ||
         pos.col > 7
-        ) throw player_exception{ player_exception::index_out_of_bounds, "Position not valid." };
+        ) throw player_exception{ player_exception::index_out_of_bounds, "Position not valid" };
 }
 
 /**
@@ -625,7 +625,7 @@ struct Move
                 from.row + (to.row - from.row) / 2,
                 from.col + (to.col - from.col) / 2
         };
-        throw player_exception{ player_exception::index_out_of_bounds, "La mossa non mangia pedine." };
+        throw player_exception{ player_exception::index_out_of_bounds, "Move not jumping any piece" };
     }
 
     void print(ostream& output)
@@ -1535,7 +1535,7 @@ public:
                     if (found)
                     {
                         if (!changeInMove(pos))
-                            throw player_exception{ player_exception::invalid_board, "More than one move found." };
+                            throw player_exception{ player_exception::invalid_board, "More than one move found" };
                     }
                     else
                     {
@@ -1698,14 +1698,14 @@ public:
                         // Pedina --> Pedina, non valida
                         else
                         {
-                            throw player_exception{ player_exception::invalid_board, "Mossa non valida." };
+                            throw player_exception{ player_exception::invalid_board, "Invalid move" };
                         }
                         for (const Move m : possible)
                         {
                             if (checkMove(m))
                             {
                                 if (found)
-                                    throw player_exception{ player_exception::invalid_board, "Più di una mossa trovata." };
+                                    throw player_exception{ player_exception::invalid_board, "More than a move found" };
                                 found = true;
                                 move = m;
                             }
@@ -1715,7 +1715,7 @@ public:
             }
         }
         if (!found)
-            throw player_exception{ player_exception::invalid_board, "Nessuna mossa trovata." };
+            throw player_exception{ player_exception::invalid_board, "No move found" };
         return move;
     }
 
@@ -1818,11 +1818,18 @@ public:
         }
 
         b.at(m.from) = Player::piece::e;
-        // ↓ Attenzione, è la board attuale, non quella nuova!
+        //           ↓ Attenzione, è la board attuale, non quella nuova!
         b.at(m.to) = at(m.from);
 
         // Promozione delle pedine
-        if (canBePromoted(m.to)) b.promote(m.to.row, m.to.col);
+        if (
+            m.to.row == 0 &&
+            at(m.from.row, m.from.col) == Player::piece::o
+            ) b.promote(m.to.row, m.to.col);
+        if (
+            m.to.row == 7 &&
+            at(m.from.row, m.from.col) == Player::piece::x
+            ) b.promote(m.to.row, m.to.col);
         return b;
     }
 
@@ -1903,32 +1910,6 @@ struct Player::Impl
         return best;
     }
 
-    Move bestMove(const Board& b, int depth) const
-    {
-        List<Position> movable = b.getMovablePieces(player_nr);
-        
-    }
-
-    /**
-     * @brief 
-     * 
-     * @param b 
-     * @param p 
-     * @param depth 
-     * @param[out] move 
-     * @return Move 
-     */
-    Move bestPieceMove(const Board& b, Position p, int depth, Move& move) const
-    {
-        List<Move> moves = b.getPossibleMoves(p);
-
-        for (const Move m : moves)
-        {
-            Board applied = b.applyMove(m);
-            
-        }
-    }
-
     int evaluateMove(const Move& m, const Board& b) const
     {
         int points = 0;
@@ -2007,7 +1988,7 @@ Player& Player::operator=(const Player& p)
 
 Player::piece Player::operator()(int r, int c, int history_offset) const
 {
-    pimpl->history.at(history_offset).at(r, c);
+    return pimpl->history.at(history_offset).at(r, c);
 }
 
 void Player::load_board(const std::string& filename)
